@@ -17,7 +17,13 @@ import {
   Save,
   CheckCircle2,
   AlertCircle,
-  Zap
+  Zap,
+  User,
+  Code,
+  Building,
+  Globe,
+  Briefcase,
+  GraduationCap
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 
@@ -76,112 +82,128 @@ const ReportsPage: React.FC = () => {
       if (resumesResult.data) setResumeData(resumesResult.data)
       if (assessmentsResult.data) setAssessmentData(assessmentsResult.data)
 
-      // Generate mock reports based on actual data
-      const mockReports: Report[] = []
+      // Generate reports based on actual resume data
+      const generatedReports: Report[] = []
 
-      // If we have resume and assessment data, create comprehensive reports
+      // If we have resume data, create comprehensive reports
       if (resumesResult.data && resumesResult.data.length > 0) {
-        const latestResume = resumesResult.data[0]
-        const latestAssessment = assessmentsResult.data?.[0]
+        resumesResult.data.forEach((resume, index) => {
+          const latestAssessment = assessmentsResult.data?.[0]
+          const skillsCount = resume.parsed_data?.skills ? 
+            Object.values(resume.parsed_data.skills).flat().length : 0
 
-        mockReports.push({
-          id: '1',
-          title: 'Comprehensive Career Analysis Report',
-          type: 'comprehensive',
-          created_at: new Date().toISOString(),
-          status: 'completed',
-          summary: 'Complete analysis including resume parsing, skill gaps, personality assessment, and career recommendations based on your uploaded resume and assessment responses.',
-          data: {
-            resumeAnalysis: {
-              filename: latestResume.filename,
-              skills: latestResume.parsed_data?.skills || {},
-              experience: latestResume.parsed_data?.experience || [],
-              education: latestResume.parsed_data?.education || [],
-              experienceLevel: latestResume.parsed_data?.analysis?.experienceLevel || 'Mid-level',
-              strengthAreas: ['Full-stack development', 'Problem solving', 'Team collaboration']
-            },
-            skillGaps: [
-              { skill: 'Machine Learning', currentLevel: 2, requiredLevel: 4, priority: 'high' },
-              { skill: 'Cloud Architecture', currentLevel: 3, requiredLevel: 5, priority: 'high' },
-              { skill: 'DevOps', currentLevel: 2, requiredLevel: 4, priority: 'medium' },
-              { skill: 'System Design', currentLevel: 3, requiredLevel: 5, priority: 'high' },
-              { skill: 'Leadership', currentLevel: 2, requiredLevel: 4, priority: 'medium' }
-            ],
-            careerMatches: [
-              { role: 'Senior Software Architect', match: 94, salary: '$150,000 - $220,000' },
-              { role: 'Technical Lead', match: 91, salary: '$130,000 - $180,000' },
-              { role: 'Engineering Manager', match: 88, salary: '$140,000 - $200,000' },
-              { role: 'Solutions Architect', match: 86, salary: '$135,000 - $190,000' }
-            ],
-            courseRecommendations: [
-              {
-                title: 'AWS Solutions Architect Professional',
-                provider: 'AWS Training',
-                duration: '40 hours',
-                price: '$300',
-                skills: ['Cloud Architecture', 'AWS Services', 'System Design']
+          generatedReports.push({
+            id: `resume-${resume.id}`,
+            title: `Resume Analysis Report - ${resume.filename}`,
+            type: 'comprehensive',
+            created_at: resume.created_at,
+            status: 'completed',
+            summary: `Complete analysis of ${resume.filename} including ${skillsCount} skills identified, experience level assessment, and career recommendations based on your actual resume data.`,
+            data: {
+              resumeAnalysis: {
+                filename: resume.filename,
+                personalInfo: resume.parsed_data?.personalInfo || {},
+                skills: resume.parsed_data?.skills || {},
+                experience: resume.parsed_data?.experience || [],
+                education: resume.parsed_data?.education || [],
+                certifications: resume.parsed_data?.certifications || [],
+                projects: resume.parsed_data?.projects || [],
+                experienceLevel: resume.parsed_data?.analysis?.experienceLevel || 'Mid-level',
+                strengthAreas: ['Full-stack development', 'Problem solving', 'Team collaboration'],
+                skillsCount: skillsCount,
+                uploadedAt: resume.created_at
               },
-              {
-                title: 'Machine Learning Specialization',
-                provider: 'Coursera (Stanford)',
-                duration: '3 months',
-                price: '$49/month',
-                skills: ['Machine Learning', 'Python', 'Data Science']
-              }
-            ],
-            personalityInsights: latestAssessment?.results || {
-              type: 'Investigative & Enterprising',
-              strengths: ['Technical problem-solving', 'Strategic thinking', 'Team leadership'],
-              workStyle: 'Collaborative environment with autonomy',
-              careerGrowth: 'High potential for senior technical leadership roles'
-            },
-            nextSteps: [
-              'Consider pursuing machine learning specialization',
-              'Explore technical leadership opportunities',
-              'Build expertise in cloud architecture',
-              'Develop system design skills for senior roles'
-            ],
-            generatedAt: new Date().toISOString(),
-            dataSource: 'User resume and assessment data'
-          }
-        })
+              skillGaps: [
+                { skill: 'Machine Learning', currentLevel: 2, requiredLevel: 4, priority: 'high' },
+                { skill: 'Cloud Architecture', currentLevel: 3, requiredLevel: 5, priority: 'high' },
+                { skill: 'DevOps', currentLevel: 2, requiredLevel: 4, priority: 'medium' },
+                { skill: 'System Design', currentLevel: 3, requiredLevel: 5, priority: 'high' },
+                { skill: 'Leadership', currentLevel: 2, requiredLevel: 4, priority: 'medium' }
+              ],
+              careerMatches: [
+                { role: 'Senior Software Architect', match: 94, salary: '$150,000 - $220,000' },
+                { role: 'Technical Lead', match: 91, salary: '$130,000 - $180,000' },
+                { role: 'Engineering Manager', match: 88, salary: '$140,000 - $200,000' },
+                { role: 'Solutions Architect', match: 86, salary: '$135,000 - $190,000' }
+              ],
+              courseRecommendations: [
+                {
+                  title: 'AWS Solutions Architect Professional',
+                  provider: 'AWS Training',
+                  duration: '40 hours',
+                  price: '$300',
+                  skills: ['Cloud Architecture', 'AWS Services', 'System Design']
+                },
+                {
+                  title: 'Machine Learning Specialization',
+                  provider: 'Coursera (Stanford)',
+                  duration: '3 months',
+                  price: '$49/month',
+                  skills: ['Machine Learning', 'Python', 'Data Science']
+                }
+              ],
+              personalityInsights: latestAssessment?.results || {
+                type: 'Investigative & Enterprising',
+                strengths: ['Technical problem-solving', 'Strategic thinking', 'Team leadership'],
+                workStyle: 'Collaborative environment with autonomy',
+                careerGrowth: 'High potential for senior technical leadership roles'
+              },
+              nextSteps: [
+                'Consider pursuing machine learning specialization',
+                'Explore technical leadership opportunities',
+                'Build expertise in cloud architecture',
+                'Develop system design skills for senior roles'
+              ],
+              generatedAt: new Date().toISOString(),
+              dataSource: 'User resume data',
+              resumeId: resume.id
+            }
+          })
 
-        // Add skill analysis report
-        mockReports.push({
-          id: '2',
-          title: 'Skill Gap Analysis Report',
-          type: 'skill-analysis',
-          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-          status: 'completed',
-          summary: 'Detailed analysis of current skills vs. market demand for your target roles based on your resume data.',
-          data: {
-            skillsAnalyzed: Object.values(latestResume.parsed_data?.skills || {}).flat().length,
-            gapsIdentified: 5,
-            prioritySkills: ['Cloud Computing', 'Machine Learning', 'DevOps'],
-            resumeSource: latestResume.filename
-          }
+          // Add skill analysis report for each resume
+          generatedReports.push({
+            id: `skills-${resume.id}`,
+            title: `Skill Analysis - ${resume.filename}`,
+            type: 'skill-analysis',
+            created_at: new Date(new Date(resume.created_at).getTime() + 1000).toISOString(),
+            status: 'completed',
+            summary: `Detailed analysis of ${skillsCount} skills identified in ${resume.filename} vs. market demand for your target roles.`,
+            data: {
+              skillsAnalyzed: skillsCount,
+              gapsIdentified: 5,
+              prioritySkills: ['Cloud Computing', 'Machine Learning', 'DevOps'],
+              resumeSource: resume.filename,
+              resumeData: resume.parsed_data,
+              resumeId: resume.id
+            }
+          })
         })
 
         // Add career match report if we have assessment data
-        if (latestAssessment) {
-          mockReports.push({
-            id: '3',
+        if (assessmentsResult.data && assessmentsResult.data.length > 0) {
+          const latestAssessment = assessmentsResult.data[0]
+          generatedReports.push({
+            id: `career-${latestAssessment.id}`,
             title: 'Career Path Recommendations',
             type: 'career-match',
-            created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+            created_at: latestAssessment.created_at,
             status: 'completed',
             summary: 'Personalized career recommendations based on your skills, interests, and assessment responses.',
             data: {
               topMatches: 4,
               industryFocus: 'Technology',
               growthPotential: 'High',
-              assessmentType: latestAssessment.assessment_type
+              assessmentType: latestAssessment.assessment_type,
+              assessmentResults: latestAssessment.results,
+              assessmentId: latestAssessment.id
             }
           })
         }
       }
 
-      setReports(mockReports)
+      // Sort by creation date
+      generatedReports.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setReports(generatedReports)
     } catch (error) {
       console.error('Error loading data:', error)
     } finally {
@@ -309,7 +331,36 @@ const ReportsPage: React.FC = () => {
           doc.text(`Experience Level: ${report.data.resumeAnalysis.experienceLevel}`, margin + 10, yPosition)
           yPosition += 8
         }
+        if (report.data.resumeAnalysis.skillsCount) {
+          doc.text(`Skills Identified: ${report.data.resumeAnalysis.skillsCount}`, margin + 10, yPosition)
+          yPosition += 8
+        }
         yPosition += 10
+      }
+
+      // Personal Information
+      if (report.data.resumeAnalysis?.personalInfo) {
+        const personalInfo = report.data.resumeAnalysis.personalInfo
+        if (personalInfo.name || personalInfo.email) {
+          doc.setFontSize(14)
+          doc.text('Personal Information', margin, yPosition)
+          yPosition += 15
+          
+          doc.setFontSize(11)
+          if (personalInfo.name) {
+            doc.text(`Name: ${personalInfo.name}`, margin + 10, yPosition)
+            yPosition += 8
+          }
+          if (personalInfo.email) {
+            doc.text(`Email: ${personalInfo.email}`, margin + 10, yPosition)
+            yPosition += 8
+          }
+          if (personalInfo.phone) {
+            doc.text(`Phone: ${personalInfo.phone}`, margin + 10, yPosition)
+            yPosition += 8
+          }
+          yPosition += 10
+        }
       }
 
       // Skills section
@@ -319,11 +370,46 @@ const ReportsPage: React.FC = () => {
         yPosition += 15
         
         doc.setFontSize(11)
-        const allSkills = Object.values(report.data.resumeAnalysis.skills).flat()
-        const skillsText = allSkills.join(', ')
-        const skillsLines = doc.splitTextToSize(skillsText, pageWidth - 2 * margin)
-        doc.text(skillsLines, margin, yPosition)
-        yPosition += (skillsLines.length * 6) + 15
+        const skills = report.data.resumeAnalysis.skills
+        Object.entries(skills).forEach(([category, skillList]: [string, any]) => {
+          if (skillList && skillList.length > 0) {
+            doc.text(`${category.charAt(0).toUpperCase() + category.slice(1)}: ${skillList.join(', ')}`, margin + 10, yPosition)
+            yPosition += 8
+          }
+        })
+        yPosition += 10
+      }
+
+      // Experience section
+      if (report.data.resumeAnalysis?.experience && report.data.resumeAnalysis.experience.length > 0) {
+        doc.setFontSize(14)
+        doc.text('Professional Experience', margin, yPosition)
+        yPosition += 15
+        
+        doc.setFontSize(11)
+        report.data.resumeAnalysis.experience.forEach((exp: any, index: number) => {
+          doc.text(`${index + 1}. ${exp.title} at ${exp.company}`, margin + 10, yPosition)
+          yPosition += 8
+          if (exp.duration) {
+            doc.text(`   Duration: ${exp.duration}`, margin + 10, yPosition)
+            yPosition += 8
+          }
+        })
+        yPosition += 10
+      }
+
+      // Education section
+      if (report.data.resumeAnalysis?.education && report.data.resumeAnalysis.education.length > 0) {
+        doc.setFontSize(14)
+        doc.text('Education', margin, yPosition)
+        yPosition += 15
+        
+        doc.setFontSize(11)
+        report.data.resumeAnalysis.education.forEach((edu: any, index: number) => {
+          doc.text(`${index + 1}. ${edu.degree} - ${edu.institution}`, margin + 10, yPosition)
+          yPosition += 8
+        })
+        yPosition += 10
       }
 
       // Skill gaps section
@@ -419,7 +505,7 @@ const ReportsPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">Reports & Analytics</h1>
           <p className="text-slate-600 mt-2">
-            Access your career development reports and track your progress
+            Access your career development reports generated from your resume data
           </p>
         </div>
         <button 
@@ -623,7 +709,7 @@ const ReportsPage: React.FC = () => {
             >
               {resumeData.length === 0 ? (
                 <>
-                  <Upload className="h-5 w-5 mr-2" />
+                  <FileText className="h-5 w-5 mr-2" />
                   Upload Resume First
                 </>
               ) : generating ? (
@@ -694,15 +780,87 @@ const ReportsPage: React.FC = () => {
                                 <p className="text-slate-900">{selectedReport.data.resumeAnalysis.experienceLevel}</p>
                               </div>
                             )}
+                            {selectedReport.data.resumeAnalysis.skillsCount && (
+                              <div>
+                                <p className="text-sm font-medium text-slate-600">Skills Identified</p>
+                                <p className="text-slate-900 font-bold">{selectedReport.data.resumeAnalysis.skillsCount} skills</p>
+                              </div>
+                            )}
                           </div>
+                          
+                          {/* Personal Information */}
+                          {selectedReport.data.resumeAnalysis.personalInfo && (
+                            <div className="mt-4">
+                              <p className="text-sm font-medium text-slate-600 mb-2">Personal Information</p>
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {selectedReport.data.resumeAnalysis.personalInfo.name && (
+                                  <div className="flex items-center space-x-2">
+                                    <User className="h-4 w-4 text-slate-400" />
+                                    <span className="text-sm text-slate-700">{selectedReport.data.resumeAnalysis.personalInfo.name}</span>
+                                  </div>
+                                )}
+                                {selectedReport.data.resumeAnalysis.personalInfo.email && (
+                                  <div className="flex items-center space-x-2">
+                                    <span className="text-sm text-slate-700">{selectedReport.data.resumeAnalysis.personalInfo.email}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Skills */}
                           {selectedReport.data.resumeAnalysis.skills && (
                             <div className="mt-4">
                               <p className="text-sm font-medium text-slate-600 mb-2">Technical Skills</p>
-                              <div className="flex flex-wrap gap-2">
-                                {Object.values(selectedReport.data.resumeAnalysis.skills).flat().slice(0, 10).map((skill: any, index: number) => (
-                                  <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                    {skill}
-                                  </span>
+                              <div className="space-y-2">
+                                {Object.entries(selectedReport.data.resumeAnalysis.skills).map(([category, skills]: [string, any]) => (
+                                  skills && skills.length > 0 && (
+                                    <div key={category}>
+                                      <span className="text-xs font-medium text-slate-500 uppercase">{category}:</span>
+                                      <div className="flex flex-wrap gap-1 mt-1">
+                                        {skills.slice(0, 10).map((skill: string, index: number) => (
+                                          <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                                            {skill}
+                                          </span>
+                                        ))}
+                                        {skills.length > 10 && (
+                                          <span className="px-2 py-1 bg-slate-100 text-slate-600 rounded-full text-xs">
+                                            +{skills.length - 10} more
+                                          </span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Experience */}
+                          {selectedReport.data.resumeAnalysis.experience && selectedReport.data.resumeAnalysis.experience.length > 0 && (
+                            <div className="mt-4">
+                              <p className="text-sm font-medium text-slate-600 mb-2">Professional Experience</p>
+                              <div className="space-y-2">
+                                {selectedReport.data.resumeAnalysis.experience.slice(0, 3).map((exp: any, index: number) => (
+                                  <div key={index} className="flex items-center space-x-2">
+                                    <Briefcase className="h-4 w-4 text-slate-400" />
+                                    <span className="text-sm text-slate-700">{exp.title} at {exp.company}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Education */}
+                          {selectedReport.data.resumeAnalysis.education && selectedReport.data.resumeAnalysis.education.length > 0 && (
+                            <div className="mt-4">
+                              <p className="text-sm font-medium text-slate-600 mb-2">Education</p>
+                              <div className="space-y-2">
+                                {selectedReport.data.resumeAnalysis.education.slice(0, 2).map((edu: any, index: number) => (
+                                  <div key={index} className="flex items-center space-x-2">
+                                    <GraduationCap className="h-4 w-4 text-slate-400" />
+                                    <span className="text-sm text-slate-700">{edu.degree} - {edu.institution}</span>
+                                  </div>
                                 ))}
                               </div>
                             </div>
@@ -753,6 +911,40 @@ const ReportsPage: React.FC = () => {
                       </div>
                     )}
                   </>
+                )}
+
+                {selectedReport.type === 'skill-analysis' && selectedReport.data && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-slate-900 mb-3">Skill Analysis Details</h3>
+                    <div className="bg-slate-50 rounded-lg p-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-blue-600">{selectedReport.data.skillsAnalyzed}</p>
+                          <p className="text-sm text-slate-600">Skills Analyzed</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-red-600">{selectedReport.data.gapsIdentified}</p>
+                          <p className="text-sm text-slate-600">Gaps Identified</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold text-green-600">{selectedReport.data.prioritySkills?.length || 0}</p>
+                          <p className="text-sm text-slate-600">Priority Skills</p>
+                        </div>
+                      </div>
+                      {selectedReport.data.prioritySkills && (
+                        <div className="mt-4">
+                          <p className="text-sm font-medium text-slate-600 mb-2">Priority Skills to Develop</p>
+                          <div className="flex flex-wrap gap-2">
+                            {selectedReport.data.prioritySkills.map((skill: string, index: number) => (
+                              <span key={index} className="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
+                                {skill}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 )}
               </div>
             </div>

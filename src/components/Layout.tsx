@@ -202,7 +202,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         const latestResume = resumes[0]
         const parsedData = latestResume.parsed_data
 
-        // Skills insight
+        // Skills insight - Show actual count from resume
         if (parsedData?.skills) {
           const totalSkills = Object.values(parsedData.skills).flat().length
           insights.push({
@@ -326,10 +326,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       description: 'Upload and analyze'
     },
     { 
-      name: 'Career Analysis', 
+      name: 'Skill Analysis', 
       href: '/analysis', 
       icon: Target,
-      description: 'Skills and personality'
+      description: 'Skills and career insights'
     },
     { 
       name: 'Reports', 
