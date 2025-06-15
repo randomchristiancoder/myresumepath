@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-export interface ApiKeyConfig {
+interface ApiKeyConfig {
   id: string
   provider: string
   apiKey: string
@@ -11,7 +11,7 @@ export interface ApiKeyConfig {
   lastUsed?: string
 }
 
-export interface SettingsState {
+interface SettingsState {
   apiKeys: ApiKeyConfig[]
   globalSettings: {
     defaultProvider: string

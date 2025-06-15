@@ -9,13 +9,13 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey)
 
-export interface User {
+interface User {
   id: string
   email: string
   created_at: string
 }
 
-export interface ResumeData {
+interface ResumeData {
   id: string
   user_id: string
   filename: string
@@ -24,7 +24,7 @@ export interface ResumeData {
   created_at: string
 }
 
-export interface Assessment {
+interface Assessment {
   id: string
   user_id: string
   assessment_type: string
@@ -33,7 +33,7 @@ export interface Assessment {
   created_at: string
 }
 
-export interface Report {
+interface Report {
   id: string
   user_id: string
   resume_id: string
@@ -42,7 +42,7 @@ export interface Report {
   created_at: string
 }
 
-export interface ApiKey {
+interface ApiKey {
   id: string
   user_id: string
   provider: string

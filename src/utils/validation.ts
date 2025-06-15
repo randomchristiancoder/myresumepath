@@ -31,23 +31,23 @@ export const validatePassword = (password: string): {
   }
 }
 
-export const validateFileType = (file: File, allowedTypes: string[]): boolean => {
+const validateFileType = (file: File, allowedTypes: string[]): boolean => {
   return allowedTypes.includes(file.type)
 }
 
-export const validateFileSize = (file: File, maxSizeInMB: number): boolean => {
+const validateFileSize = (file: File, maxSizeInMB: number): boolean => {
   const maxSizeInBytes = maxSizeInMB * 1024 * 1024
   return file.size <= maxSizeInBytes
 }
 
-export const validateRequired = (value: any): boolean => {
+const validateRequired = (value: any): boolean => {
   if (typeof value === 'string') {
     return value.trim().length > 0
   }
   return value !== null && value !== undefined
 }
 
-export const validateUrl = (url: string): boolean => {
+const validateUrl = (url: string): boolean => {
   try {
     new URL(url)
     return true
