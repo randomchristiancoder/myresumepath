@@ -42,6 +42,7 @@ interface RecentActivity {
     skillsCount?: number
     experienceLevel?: string
     extractionQuality?: string
+    resumeData?: any // Store the full resume data
   }
 }
 
@@ -101,7 +102,7 @@ const Dashboard: React.FC = () => {
       // Fetch recent activity with enhanced resume upload details
       const activities: RecentActivity[] = []
       
-      // Add resume uploads with detailed metadata
+      // Add resume uploads with detailed metadata AND full resume data
       if (resumesResult.data) {
         resumesResult.data
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -122,7 +123,8 @@ const Dashboard: React.FC = () => {
                 resumeId: resume.id,
                 skillsCount,
                 experienceLevel: resume.parsed_data?.analysis?.experienceLevel,
-                extractionQuality: resume.parsed_data?.analysis ? 'High Quality' : 'Standard'
+                extractionQuality: resume.parsed_data?.analysis ? 'High Quality' : 'Standard',
+                resumeData: resume // Store the complete resume data
               }
             })
           })
@@ -173,37 +175,70 @@ const Dashboard: React.FC = () => {
     }
   }
 
-  const handleViewResumeDetails = async (resumeId: string) => {
+  const handleViewResumeDetails = async (activity: RecentActivity) => {
     try {
-      console.log('Viewing resume details for ID:', resumeId)
+      console.log('Viewing resume details for activity:', activity)
       
-      const { data: resume, error } = await supabase
-        .from('resumes')
-        .select('*')
-        .eq('id', resumeId)
-        .single()
+      // Use the stored resume data from metadata if available
+      if (activity.metadata?.resumeData) {
+        const resume = activity.metadata.resumeData
+        console.log('Using stored resume data:', resume)
 
-      if (error) {
-        console.error('Error fetching resume:', error)
-        throw error
+        // Store resume data for viewing
+        const viewData = {
+          parsedData: resume.parsed_data,
+          filename: resume.filename,
+          uploadedAt: resume.created_at,
+          resumeId: resume.id,
+          content: resume.content,
+          aiEnhanced: true,
+          extractionQuality: activity.metadata.extractionQuality || 'High Quality'
+        }
+
+        localStorage.setItem('viewResumeData', JSON.stringify(viewData))
+        console.log('Stored view data:', viewData)
+
+        // Navigate to upload page in view mode
+        navigate('/upload?view=true')
+        return
       }
 
-      console.log('Resume data fetched:', resume)
+      // Fallback: fetch from database if no stored data
+      if (activity.metadata?.resumeId) {
+        console.log('Fetching resume from database:', activity.metadata.resumeId)
+        
+        const { data: resume, error } = await supabase
+          .from('resumes')
+          .select('*')
+          .eq('id', activity.metadata.resumeId)
+          .single()
 
-      // Store resume data for viewing
-      const viewData = {
-        parsedData: resume.parsed_data,
-        filename: resume.filename,
-        uploadedAt: resume.created_at,
-        resumeId: resume.id,
-        content: resume.content
+        if (error) {
+          console.error('Error fetching resume:', error)
+          throw error
+        }
+
+        console.log('Resume data fetched from DB:', resume)
+
+        // Store resume data for viewing
+        const viewData = {
+          parsedData: resume.parsed_data,
+          filename: resume.filename,
+          uploadedAt: resume.created_at,
+          resumeId: resume.id,
+          content: resume.content,
+          aiEnhanced: true,
+          extractionQuality: 'High Quality'
+        }
+
+        localStorage.setItem('viewResumeData', JSON.stringify(viewData))
+        console.log('Stored view data from DB:', viewData)
+
+        // Navigate to upload page in view mode
+        navigate('/upload?view=true')
+      } else {
+        throw new Error('No resume ID found in activity metadata')
       }
-
-      localStorage.setItem('viewResumeData', JSON.stringify(viewData))
-      console.log('Stored view data:', viewData)
-
-      // Navigate to upload page in view mode
-      navigate('/upload?view=true')
     } catch (error) {
       console.error('Error fetching resume details:', error)
       alert('Unable to load resume details. Please try again.')
@@ -459,14 +494,14 @@ const Dashboard: React.FC = () => {
                   <div 
                     key={index} 
                     className={`flex items-start space-x-3 p-3 rounded-lg border transition-all duration-200 ${
-                      activity.type === 'resume_upload' && activity.metadata?.resumeId 
-                        ? `cursor-pointer ${getActivityColor(activity.type)}` 
+                      activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData)
+                        ? `cursor-pointer ${getActivityColor(activity.type)} hover:shadow-md` 
                         : getActivityColor(activity.type)
                     }`}
                     onClick={() => {
-                      if (activity.type === 'resume_upload' && activity.metadata?.resumeId) {
+                      if (activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData)) {
                         console.log('Clicked resume activity:', activity)
-                        handleViewResumeDetails(activity.metadata.resumeId)
+                        handleViewResumeDetails(activity)
                       }
                     }}
                   >
@@ -478,7 +513,7 @@ const Dashboard: React.FC = () => {
                         <p className="text-sm font-medium text-slate-900">
                           {activity.title}
                         </p>
-                        {activity.type === 'resume_upload' && activity.metadata?.resumeId && (
+                        {activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData) && (
                           <Eye className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors" />
                         )}
                       </div>
@@ -507,8 +542,9 @@ const Dashboard: React.FC = () => {
                           </span>
                         </div>
                       )}
-                      {activity.type === 'resume_upload' && activity.metadata?.resumeId && (
-                        <div className="mt-2 text-xs text-blue-600 font-medium">
+                      {activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData) && (
+                        <div className="mt-2 text-xs text-blue-600 font-medium flex items-center">
+                          <Eye className="h-3 w-3 mr-1" />
                           Click to view details →
                         </div>
                       )}
