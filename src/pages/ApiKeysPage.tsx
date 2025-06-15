@@ -29,49 +29,6 @@ const ApiKeysPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null)
   const [showGlobalSettings, setShowGlobalSettings] = useState(false)
 
-  const providers = [
-    { 
-      id: 'openrouter', 
-      name: 'OpenRouter', 
-      icon: Globe,
-      description: 'Access to multiple AI models through a single API',
-      color: 'from-purple-500 to-violet-500',
-      website: 'https://openrouter.ai'
-    },
-    { 
-      id: 'openai', 
-      name: 'OpenAI', 
-      icon: Brain,
-      description: 'GPT models for advanced AI capabilities',
-      color: 'from-green-500 to-emerald-500',
-      website: 'https://platform.openai.com'
-    },
-    { 
-      id: 'anthropic', 
-      name: 'Anthropic', 
-      icon: Shield,
-      description: 'Claude models focused on safety and helpfulness',
-      color: 'from-orange-500 to-red-500',
-      website: 'https://console.anthropic.com'
-    },
-    { 
-      id: 'google', 
-      name: 'Google', 
-      icon: Star,
-      description: 'Gemini models with multimodal capabilities',
-      color: 'from-blue-500 to-cyan-500',
-      website: 'https://makersuite.google.com'
-    },
-    { 
-      id: 'cohere', 
-      name: 'Cohere', 
-      icon: Cpu,
-      description: 'Enterprise-focused language models',
-      color: 'from-indigo-500 to-purple-500',
-      website: 'https://dashboard.cohere.ai'
-    }
-  ]
-
   const handleSuccess = (message: string) => {
     setSuccess(message)
     setError(null)
@@ -99,7 +56,7 @@ const ApiKeysPage: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">API Key Management</h1>
+          <h1 className="text-3xl font-bold text-slate-900">AI Provider Configuration</h1>
           <p className="text-slate-600 mt-2">
             Configure your AI provider API keys and select models for different features
           </p>
@@ -179,11 +136,11 @@ const ApiKeysPage: React.FC = () => {
                   onChange={(e) => updateGlobalSettings({ defaultProvider: e.target.value })}
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
-                  {providers.map(provider => (
-                    <option key={provider.id} value={provider.id}>
-                      {provider.name}
-                    </option>
-                  ))}
+                  <option value="openrouter">OpenRouter</option>
+                  <option value="openai">OpenAI</option>
+                  <option value="anthropic">Anthropic</option>
+                  <option value="google">Google</option>
+                  <option value="cohere">Cohere</option>
                 </select>
               </div>
 
@@ -197,6 +154,7 @@ const ApiKeysPage: React.FC = () => {
                   className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                 >
                   <option value="meta-llama/llama-3.2-3b-instruct:free">Llama 3.2 3B (Free)</option>
+                  <option value="deepseek/deepseek-r1:free">DeepSeek R1 (Free)</option>
                   <option value="mistralai/mistral-7b-instruct:free">Mistral 7B (Free)</option>
                   <option value="microsoft/phi-3-mini-128k-instruct:free">Phi-3 Mini (Free)</option>
                 </select>
@@ -249,7 +207,7 @@ const ApiKeysPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Provider Configuration */}
+      {/* Unified Provider Configuration */}
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-slate-900">Provider Configuration</h2>
@@ -259,14 +217,10 @@ const ApiKeysPage: React.FC = () => {
           </div>
         </div>
 
-        {providers.map((provider) => (
-          <ApiKeyManager
-            key={provider.id}
-            provider={provider}
-            onSuccess={handleSuccess}
-            onError={handleError}
-          />
-        ))}
+        <ApiKeyManager
+          onSuccess={handleSuccess}
+          onError={handleError}
+        />
       </div>
 
       {/* Getting Started */}
@@ -281,13 +235,13 @@ const ApiKeysPage: React.FC = () => {
             <h3 className="text-xl font-semibold text-slate-900 mb-2">Get Started with AI</h3>
             <p className="text-slate-600 mb-6 max-w-2xl mx-auto">
               Configure your first API key to unlock AI-powered features. We recommend starting with 
-              OpenRouter for access to multiple models including free options.
+              OpenRouter for access to multiple models including free options like DeepSeek R1.
             </p>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-4xl mx-auto">
               <div className="p-4 bg-white rounded-lg border border-blue-200">
                 <Gift className="h-6 w-6 text-green-600 mx-auto mb-2" />
                 <h4 className="font-medium text-slate-900 mb-1">Free Models</h4>
-                <p className="text-slate-600 text-sm">Start with free models like Llama 3.2 and Mistral 7B</p>
+                <p className="text-slate-600 text-sm">Start with free models like DeepSeek R1, Llama 3.2, and Mistral 7B</p>
               </div>
               <div className="p-4 bg-white rounded-lg border border-blue-200">
                 <Shield className="h-6 w-6 text-blue-600 mx-auto mb-2" />

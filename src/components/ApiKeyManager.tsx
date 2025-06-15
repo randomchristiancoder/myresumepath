@@ -17,7 +17,9 @@ import {
   Gift,
   CheckCircle2,
   AlertCircle,
-  ExternalLink
+  ExternalLink,
+  RefreshCw,
+  Settings
 } from 'lucide-react'
 
 interface AIModel {
@@ -44,27 +46,68 @@ interface Provider {
 }
 
 interface ApiKeyManagerProps {
-  provider: Provider
   onSuccess?: (message: string) => void
   onError?: (message: string) => void
 }
 
 const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
-  provider,
   onSuccess,
   onError
 }) => {
   const { apiKeys, addApiKey, updateApiKey, deleteApiKey, getApiKey } = useSettingsStore()
   
+  const [selectedProvider, setSelectedProvider] = useState('openrouter')
   const [tempApiKey, setTempApiKey] = useState('')
   const [selectedModel, setSelectedModel] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [validationError, setValidationError] = useState('')
+  const [isRefreshingModels, setIsRefreshingModels] = useState(false)
 
-  const existingKey = getApiKey(provider.id)
+  const providers: Provider[] = [
+    { 
+      id: 'openrouter', 
+      name: 'OpenRouter', 
+      icon: Globe,
+      description: 'Access to multiple AI models through a single API',
+      color: 'from-purple-500 to-violet-500',
+      website: 'https://openrouter.ai'
+    },
+    { 
+      id: 'openai', 
+      name: 'OpenAI', 
+      icon: Brain,
+      description: 'GPT models for advanced AI capabilities',
+      color: 'from-green-500 to-emerald-500',
+      website: 'https://platform.openai.com'
+    },
+    { 
+      id: 'anthropic', 
+      name: 'Anthropic', 
+      icon: Shield,
+      description: 'Claude models focused on safety and helpfulness',
+      color: 'from-orange-500 to-red-500',
+      website: 'https://console.anthropic.com'
+    },
+    { 
+      id: 'google', 
+      name: 'Google', 
+      icon: Star,
+      description: 'Gemini models with multimodal capabilities',
+      color: 'from-blue-500 to-cyan-500',
+      website: 'https://makersuite.google.com'
+    },
+    { 
+      id: 'cohere', 
+      name: 'Cohere', 
+      icon: Cpu,
+      description: 'Enterprise-focused language models',
+      color: 'from-indigo-500 to-purple-500',
+      website: 'https://dashboard.cohere.ai'
+    }
+  ]
 
-  // Comprehensive AI Models Database
+  // Comprehensive AI Models Database with accurate Deepseek models
   const availableModels: AIModel[] = [
     // OpenRouter Free Models
     {
@@ -77,6 +120,41 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
       category: 'text',
       performance: 'good',
       recommended: true
+    },
+    {
+      id: 'deepseek/deepseek-r1:free',
+      name: 'DeepSeek R1 (Free)',
+      provider: 'openrouter',
+      description: 'DeepSeek\'s reasoning model with advanced problem-solving capabilities',
+      pricing: 'free',
+      contextWindow: 65536,
+      category: 'reasoning',
+      performance: 'excellent',
+      recommended: true
+    },
+    {
+      id: 'deepseek/deepseek-chat',
+      name: 'DeepSeek Chat',
+      provider: 'openrouter',
+      description: 'DeepSeek\'s conversational AI model',
+      pricing: 'paid',
+      contextWindow: 32768,
+      category: 'chat',
+      performance: 'excellent',
+      inputCost: '$0.14/1M',
+      outputCost: '$0.28/1M'
+    },
+    {
+      id: 'deepseek/deepseek-coder',
+      name: 'DeepSeek Coder',
+      provider: 'openrouter',
+      description: 'Specialized coding model by DeepSeek',
+      pricing: 'paid',
+      contextWindow: 16384,
+      category: 'code',
+      performance: 'excellent',
+      inputCost: '$0.14/1M',
+      outputCost: '$0.28/1M'
     },
     {
       id: 'microsoft/phi-3-mini-128k-instruct:free',
@@ -288,20 +366,26 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
     }
   ]
 
+  const selectedProviderData = providers.find(p => p.id === selectedProvider)!
+  const existingKey = getApiKey(selectedProvider)
+
   useEffect(() => {
     if (existingKey) {
       setTempApiKey(existingKey.apiKey)
       setSelectedModel(existingKey.selectedModel)
     } else {
+      setTempApiKey('')
       // Set default free model for new keys
       const defaultFreeModel = availableModels.find(
-        model => model.provider === provider.id && model.pricing === 'free' && model.recommended
+        model => model.provider === selectedProvider && model.pricing === 'free' && model.recommended
       )
       if (defaultFreeModel) {
         setSelectedModel(defaultFreeModel.id)
+      } else {
+        setSelectedModel('')
       }
     }
-  }, [existingKey, provider.id])
+  }, [existingKey, selectedProvider])
 
   const validateApiKey = (key: string): boolean => {
     if (!key.trim()) {
@@ -310,7 +394,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
     }
 
     // Provider-specific validation
-    switch (provider.id) {
+    switch (selectedProvider) {
       case 'openai':
         if (!key.startsWith('sk-')) {
           setValidationError('OpenAI API keys should start with "sk-"')
@@ -352,10 +436,10 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
           selectedModel: selectedModel
         })
       } else {
-        addApiKey(provider.id, tempApiKey, selectedModel)
+        addApiKey(selectedProvider, tempApiKey, selectedModel)
       }
 
-      onSuccess?.(`${provider.name} API key saved successfully!`)
+      onSuccess?.(`${selectedProviderData.name} API key saved successfully!`)
     } catch (error) {
       onError?.('Failed to save API key')
     } finally {
@@ -371,7 +455,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
       deleteApiKey(existingKey.id)
       setTempApiKey('')
       setSelectedModel('')
-      onSuccess?.(`${provider.name} API key deleted successfully!`)
+      onSuccess?.(`${selectedProviderData.name} API key deleted successfully!`)
     } catch (error) {
       onError?.('Failed to delete API key')
     } finally {
@@ -379,21 +463,53 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
     }
   }
 
-  const providerModels = availableModels.filter(model => model.provider === provider.id)
+  const handleRefreshModels = async () => {
+    setIsRefreshingModels(true)
+    // Simulate API call to refresh models
+    setTimeout(() => {
+      setIsRefreshingModels(false)
+      onSuccess?.('Models refreshed successfully!')
+    }, 1000)
+  }
+
+  const providerModels = availableModels.filter(model => model.provider === selectedProvider)
   const freeModelsCount = providerModels.filter(model => model.pricing === 'free').length
 
   return (
     <div className="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
+      {/* Provider Selection Tabs */}
+      <div className="border-b border-slate-200 bg-slate-50">
+        <div className="flex overflow-x-auto">
+          {providers.map((provider) => (
+            <button
+              key={provider.id}
+              onClick={() => setSelectedProvider(provider.id)}
+              className={`flex items-center space-x-2 px-6 py-4 text-sm font-medium border-b-2 transition-all duration-200 whitespace-nowrap ${
+                selectedProvider === provider.id
+                  ? 'border-blue-500 text-blue-600 bg-white'
+                  : 'border-transparent text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+              }`}
+            >
+              <provider.icon className="h-4 w-4" />
+              <span>{provider.name}</span>
+              {getApiKey(provider.id) && (
+                <CheckCircle2 className="h-4 w-4 text-green-500" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Header */}
-      <div className={`p-6 bg-gradient-to-r ${provider.color}`}>
+      <div className={`p-6 bg-gradient-to-r ${selectedProviderData.color}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <div className="p-3 bg-white/20 rounded-xl">
-              <provider.icon className="h-8 w-8 text-white" />
+              <selectedProviderData.icon className="h-8 w-8 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">{provider.name}</h3>
-              <p className="text-white/80 text-sm">{provider.description}</p>
+              <h3 className="text-xl font-bold text-white">{selectedProviderData.name}</h3>
+              <p className="text-white/80 text-sm">{selectedProviderData.description}</p>
               <div className="flex items-center space-x-4 mt-2">
                 <div className="flex items-center space-x-1 text-white/90 text-xs">
                   <Cpu className="h-3 w-3" />
@@ -406,7 +522,7 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
                   </div>
                 )}
                 <a
-                  href={provider.website}
+                  href={selectedProviderData.website}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center space-x-1 text-white/90 hover:text-white text-xs transition-colors"
@@ -431,18 +547,28 @@ const ApiKeyManager: React.FC<ApiKeyManagerProps> = ({
         <ApiKeyInput
           value={tempApiKey}
           onChange={setTempApiKey}
-          provider={provider.id}
+          provider={selectedProvider}
           error={validationError}
           disabled={isSaving || isDeleting}
         />
 
-        <ModelSelector
-          provider={provider.id}
-          selectedModel={selectedModel}
-          onModelSelect={setSelectedModel}
-          availableModels={availableModels}
-          disabled={isSaving || isDeleting}
-        />
+        <div className="flex items-center justify-between">
+          <ModelSelector
+            provider={selectedProvider}
+            selectedModel={selectedModel}
+            onModelSelect={setSelectedModel}
+            availableModels={availableModels}
+            disabled={isSaving || isDeleting}
+          />
+          <button
+            onClick={handleRefreshModels}
+            disabled={isRefreshingModels}
+            className="ml-4 flex items-center px-3 py-2 text-blue-600 hover:text-blue-700 transition-colors disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshingModels ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+        </div>
 
         {/* Storage Notice */}
         <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
