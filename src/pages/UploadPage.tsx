@@ -495,7 +495,7 @@ const UploadPage: React.FC = () => {
                         <strong>To start the backend server:</strong><br />
                         1. Open a terminal in your project directory<br />
                         2. Run: <code className="bg-red-200 px-1 rounded">npm run dev</code><br />
-                        3. Wait for "Server running" message<br />
+                        3. Wait for "Server running\" message<br />
                         4. Return here and try uploading again
                       </div>
                     )}
