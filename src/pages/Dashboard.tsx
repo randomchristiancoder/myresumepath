@@ -35,6 +35,13 @@ interface RecentActivity {
   status: 'completed' | 'in_progress'
 }
 
+interface LatestResume {
+  id: string
+  filename: string
+  parsed_data: any
+  created_at: string
+}
+
 const Dashboard: React.FC = () => {
   const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats>({
@@ -44,6 +51,7 @@ const Dashboard: React.FC = () => {
     coursesRecommended: 0
   })
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [latestResume, setLatestResume] = useState<LatestResume | null>(null)
   const [loading, setLoading] = useState(true)
   const [hasResumeData, setHasResumeData] = useState(false)
 
@@ -70,6 +78,14 @@ const Dashboard: React.FC = () => {
       })
 
       setHasResumeData((resumesResult.count || 0) > 0)
+
+      // Get latest resume for insights
+      if (resumesResult.data && resumesResult.data.length > 0) {
+        const latest = resumesResult.data.sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        )[0]
+        setLatestResume(latest)
+      }
 
       // Fetch recent activity
       const activities: RecentActivity[] = []
@@ -396,20 +412,26 @@ const Dashboard: React.FC = () => {
               <Star className="h-5 w-5 mr-2 text-purple-600" />
               Career Insights
             </h3>
-            {hasResumeData ? (
+            {hasResumeData && latestResume ? (
               <div className="space-y-3">
                 <div className="p-3 bg-white rounded-lg border border-purple-200">
-                  <p className="text-sm font-medium text-purple-900">Top Skill Match</p>
-                  <p className="text-purple-800">Software Engineering</p>
+                  <p className="text-sm font-medium text-purple-900">Latest Resume</p>
+                  <p className="text-purple-800">{latestResume.filename}</p>
                 </div>
-                <div className="p-3 bg-white rounded-lg border border-purple-200">
-                  <p className="text-sm font-medium text-purple-900">Career Growth</p>
-                  <p className="text-purple-800">Senior Level Ready</p>
-                </div>
-                <div className="p-3 bg-white rounded-lg border border-purple-200">
-                  <p className="text-sm font-medium text-purple-900">Next Step</p>
-                  <p className="text-purple-800">Leadership Training</p>
-                </div>
+                {latestResume.parsed_data?.analysis?.experienceLevel && (
+                  <div className="p-3 bg-white rounded-lg border border-purple-200">
+                    <p className="text-sm font-medium text-purple-900">Experience Level</p>
+                    <p className="text-purple-800">{latestResume.parsed_data.analysis.experienceLevel}</p>
+                  </div>
+                )}
+                {latestResume.parsed_data?.skills && (
+                  <div className="p-3 bg-white rounded-lg border border-purple-200">
+                    <p className="text-sm font-medium text-purple-900">Skills Count</p>
+                    <p className="text-purple-800">
+                      {Object.values(latestResume.parsed_data.skills).flat().length} skills identified
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="text-center py-4">

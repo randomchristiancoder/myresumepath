@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useAuth } from '../contexts/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { 
   Upload, 
   FileText, 
@@ -127,6 +128,7 @@ const UploadPage: React.FC = () => {
   const [aiEnhanced, setAiEnhanced] = useState(false)
   const [extractionQuality, setExtractionQuality] = useState<string>('')
   const [serverStatus, setServerStatus] = useState<'checking' | 'connected' | 'offline'>('checking')
+  const [resumeId, setResumeId] = useState<string | null>(null)
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -171,6 +173,33 @@ const UploadPage: React.FC = () => {
     checkServer()
   }, [])
 
+  const saveResumeToDatabase = async (parsedData: ParsedResume, filename: string, content: string) => {
+    if (!user) return null
+
+    try {
+      const { data, error } = await supabase
+        .from('resumes')
+        .insert({
+          user_id: user.id,
+          filename: filename,
+          content: content,
+          parsed_data: parsedData
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error saving resume to database:', error)
+        return null
+      }
+
+      return data.id
+    } catch (error) {
+      console.error('Error saving resume:', error)
+      return null
+    }
+  }
+
   const handleAnalyze = async () => {
     if (!uploadedFile || !user) return
 
@@ -207,12 +236,24 @@ const UploadPage: React.FC = () => {
       setExtractionQuality(result.extractionQuality || 'Standard')
       setShowPreview(true)
 
-      // Store the analysis data in localStorage for the analysis page
+      // Save to Supabase database
+      const savedResumeId = await saveResumeToDatabase(
+        result.parsedData, 
+        uploadedFile.name, 
+        result.content || ''
+      )
+      
+      if (savedResumeId) {
+        setResumeId(savedResumeId)
+      }
+
+      // Store the analysis data in localStorage for immediate access
       localStorage.setItem('resumeAnalysis', JSON.stringify({
         parsedData: result.parsedData,
         aiEnhanced: result.aiEnhanced,
         extractionQuality: result.extractionQuality,
-        uploadedAt: new Date().toISOString()
+        uploadedAt: new Date().toISOString(),
+        resumeId: savedResumeId
       }))
 
     } catch (err: any) {
@@ -243,6 +284,7 @@ const UploadPage: React.FC = () => {
     setError(null)
     setAiEnhanced(false)
     setExtractionQuality('')
+    setResumeId(null)
   }
 
   const handleProceedToAnalysis = () => {
@@ -406,8 +448,8 @@ const UploadPage: React.FC = () => {
                     <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-800">
                       <strong>To start the backend server:</strong><br />
                       1. Open a terminal in your project directory<br />
-                      2. Run: <code className="bg-red-200 px-1 rounded">npm run server</code><br />
-                      3. Wait for "Server running\" message<br />
+                      2. Run: <code className="bg-red-200 px-1 rounded">npm run dev</code><br />
+                      3. Wait for "Server running" message<br />
                       4. Return here and try uploading again
                     </div>
                   )}
@@ -482,7 +524,7 @@ const UploadPage: React.FC = () => {
                     <div className="w-4 h-4 bg-slate-300 rounded-full"></div>
                   </div>
                   <span className="font-medium text-slate-400">
-                    Generating insights and recommendations...
+                    Saving to database and generating insights...
                   </span>
                 </div>
               </div>
@@ -514,6 +556,7 @@ const UploadPage: React.FC = () => {
                       ? 'Your resume was analyzed using advanced parsing for comprehensive data extraction'
                       : 'Your resume was processed using standard extraction methods'
                     }
+                    {resumeId && ' • Saved to your profile'}
                   </p>
                 </div>
               </div>
@@ -751,6 +794,13 @@ const UploadPage: React.FC = () => {
                     <p className="text-sm font-medium text-blue-900">AI Enhanced</p>
                     <p className="text-blue-800">{aiEnhanced ? 'Yes' : 'Standard'}</p>
                   </div>
+
+                  {resumeId && (
+                    <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                      <p className="text-sm font-medium text-green-900">Database Status</p>
+                      <p className="text-green-800">Saved to Profile</p>
+                    </div>
+                  )}
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 bg-green-50 rounded-lg border border-green-200 text-center">
@@ -835,7 +885,7 @@ const UploadPage: React.FC = () => {
                   What's Next?
                 </h3>
                 <p className="text-slate-700 mb-4 text-sm">
-                  Your resume has been successfully analyzed! Ready to take the next step in your career journey?
+                  Your resume has been successfully analyzed and saved to your profile! Ready to take the next step in your career journey?
                 </p>
                 <div className="space-y-3">
                   <button 
