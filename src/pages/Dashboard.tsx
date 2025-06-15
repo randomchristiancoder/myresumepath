@@ -15,7 +15,9 @@ import {
   Zap,
   Star,
   Clock,
-  BarChart3
+  BarChart3,
+  Eye,
+  ExternalLink
 } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
@@ -33,6 +35,13 @@ interface RecentActivity {
   description: string
   created_at: string
   status: 'completed' | 'in_progress'
+  metadata?: {
+    filename?: string
+    resumeId?: string
+    skillsCount?: number
+    experienceLevel?: string
+    extractionQuality?: string
+  }
 }
 
 interface LatestResume {
@@ -87,59 +96,103 @@ const Dashboard: React.FC = () => {
         setLatestResume(latest)
       }
 
-      // Fetch recent activity
+      // Fetch recent activity with enhanced resume upload details
       const activities: RecentActivity[] = []
       
-      // Add resume uploads
+      // Add resume uploads with detailed metadata
       if (resumesResult.data) {
-        resumesResult.data.slice(0, 3).forEach(resume => {
-          activities.push({
-            id: resume.id,
-            type: 'resume_upload',
-            title: 'Resume Uploaded',
-            description: `Uploaded ${resume.filename}`,
-            created_at: resume.created_at,
-            status: 'completed'
+        resumesResult.data
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 5)
+          .forEach(resume => {
+            const skillsCount = resume.parsed_data?.skills ? 
+              Object.values(resume.parsed_data.skills).flat().length : 0
+            
+            activities.push({
+              id: resume.id,
+              type: 'resume_upload',
+              title: 'Resume Uploaded & Analyzed',
+              description: `Uploaded ${resume.filename} • ${skillsCount} skills identified`,
+              created_at: resume.created_at,
+              status: 'completed',
+              metadata: {
+                filename: resume.filename,
+                resumeId: resume.id,
+                skillsCount,
+                experienceLevel: resume.parsed_data?.analysis?.experienceLevel,
+                extractionQuality: resume.parsed_data?.analysis ? 'High Quality' : 'Standard'
+              }
+            })
           })
-        })
       }
 
       // Add assessments
       if (assessmentsResult.data) {
-        assessmentsResult.data.slice(0, 2).forEach(assessment => {
-          activities.push({
-            id: assessment.id,
-            type: 'assessment_completed',
-            title: 'Assessment Completed',
-            description: `Completed ${assessment.assessment_type} assessment`,
-            created_at: assessment.created_at,
-            status: 'completed'
+        assessmentsResult.data
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 3)
+          .forEach(assessment => {
+            activities.push({
+              id: assessment.id,
+              type: 'assessment_completed',
+              title: 'Career Assessment Completed',
+              description: `Completed ${assessment.assessment_type} assessment`,
+              created_at: assessment.created_at,
+              status: 'completed'
+            })
           })
-        })
       }
 
       // Add reports
       if (reportsResult.data) {
-        reportsResult.data.slice(0, 2).forEach(report => {
-          activities.push({
-            id: report.id,
-            type: 'report_generated',
-            title: 'Report Generated',
-            description: 'Career development report created',
-            created_at: report.created_at,
-            status: 'completed'
+        reportsResult.data
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 3)
+          .forEach(report => {
+            activities.push({
+              id: report.id,
+              type: 'report_generated',
+              title: 'Career Report Generated',
+              description: 'Comprehensive career development report created',
+              created_at: report.created_at,
+              status: 'completed'
+            })
           })
-        })
       }
 
       // Sort by date and take most recent
       activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      setRecentActivity(activities.slice(0, 5))
+      setRecentActivity(activities.slice(0, 8))
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleViewResumeDetails = async (resumeId: string) => {
+    try {
+      const { data: resume, error } = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('id', resumeId)
+        .single()
+
+      if (error) throw error
+
+      // Store resume data for viewing
+      localStorage.setItem('viewResumeData', JSON.stringify({
+        parsedData: resume.parsed_data,
+        filename: resume.filename,
+        uploadedAt: resume.created_at,
+        resumeId: resume.id
+      }))
+
+      // Navigate to upload page in view mode
+      window.location.href = '/upload?view=true'
+    } catch (error) {
+      console.error('Error fetching resume details:', error)
     }
   }
 
@@ -215,6 +268,15 @@ const Dashboard: React.FC = () => {
       case 'assessment_completed': return <Brain className="h-4 w-4 text-purple-500" />
       case 'report_generated': return <FileText className="h-4 w-4 text-green-500" />
       default: return <CheckCircle className="h-4 w-4 text-gray-500" />
+    }
+  }
+
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'resume_upload': return 'border-blue-200 hover:border-blue-300 hover:bg-blue-50'
+      case 'assessment_completed': return 'border-purple-200 hover:border-purple-300 hover:bg-purple-50'
+      case 'report_generated': return 'border-green-200 hover:border-green-300 hover:bg-green-50'
+      default: return 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
     }
   }
 
@@ -367,32 +429,65 @@ const Dashboard: React.FC = () => {
 
         {/* Recent Activity & Insights */}
         <div className="space-y-6">
-          <h2 className="text-2xl font-bold text-slate-900">Recent Activity</h2>
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold text-slate-900">Recent Activity</h2>
+            {recentActivity.length > 0 && (
+              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
+                View All
+              </button>
+            )}
+          </div>
           
           <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
             {recentActivity.length > 0 ? (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-start space-x-3 p-3 rounded-lg hover:bg-slate-50 transition-colors">
+                  <div 
+                    key={index} 
+                    className={`flex items-start space-x-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${getActivityColor(activity.type)}`}
+                    onClick={() => {
+                      if (activity.type === 'resume_upload' && activity.metadata?.resumeId) {
+                        handleViewResumeDetails(activity.metadata.resumeId)
+                      }
+                    }}
+                  >
                     <div className="flex-shrink-0 mt-1">
                       {getActivityIcon(activity.type)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-slate-900">
-                        {activity.title}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-slate-900">
+                          {activity.title}
+                        </p>
+                        {activity.type === 'resume_upload' && (
+                          <Eye className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors" />
+                        )}
+                      </div>
                       <p className="text-sm text-slate-600 truncate">
                         {activity.description}
                       </p>
-                      <div className="flex items-center mt-1 text-xs text-slate-500">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {new Date(activity.created_at).toLocaleDateString()}
+                      <div className="flex items-center justify-between mt-2">
+                        <div className="flex items-center text-xs text-slate-500">
+                          <Clock className="h-3 w-3 mr-1" />
+                          {new Date(activity.created_at).toLocaleDateString()}
+                        </div>
+                        {activity.metadata?.extractionQuality && (
+                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                            activity.metadata.extractionQuality === 'High Quality'
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-blue-100 text-blue-800'
+                          }`}>
+                            {activity.metadata.extractionQuality}
+                          </span>
+                        )}
                       </div>
-                    </div>
-                    <div className="flex-shrink-0">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                        {activity.status}
-                      </span>
+                      {activity.metadata?.experienceLevel && (
+                        <div className="mt-1">
+                          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
+                            {activity.metadata.experienceLevel}
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}

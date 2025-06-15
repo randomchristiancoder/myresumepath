@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { useAuth } from '../contexts/AuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { 
   Upload, 
@@ -31,7 +31,8 @@ import {
   ExternalLink,
   Clock,
   Database,
-  Cpu
+  Cpu,
+  ArrowLeft
 } from 'lucide-react'
 
 interface ParsedResume {
@@ -119,6 +120,9 @@ interface ParsedResume {
 const UploadPage: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const isViewMode = searchParams.get('view') === 'true'
+  
   const [uploadedFile, setUploadedFile] = useState<File | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [isParsing, setParsing] = useState(false)
@@ -129,6 +133,7 @@ const UploadPage: React.FC = () => {
   const [extractionQuality, setExtractionQuality] = useState<string>('')
   const [serverStatus, setServerStatus] = useState<'checking' | 'connected' | 'offline'>('checking')
   const [resumeId, setResumeId] = useState<string | null>(null)
+  const [viewData, setViewData] = useState<any>(null)
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -171,7 +176,21 @@ const UploadPage: React.FC = () => {
     }
     
     checkServer()
-  }, [])
+
+    // Check if we're in view mode
+    if (isViewMode) {
+      const storedViewData = localStorage.getItem('viewResumeData')
+      if (storedViewData) {
+        const data = JSON.parse(storedViewData)
+        setViewData(data)
+        setParsedData(data.parsedData)
+        setShowPreview(true)
+        setAiEnhanced(true)
+        setExtractionQuality('High Quality')
+        setResumeId(data.resumeId)
+      }
+    }
+  }, [isViewMode])
 
   const saveResumeToDatabase = async (parsedData: ParsedResume, filename: string, content: string) => {
     if (!user) return null
@@ -291,6 +310,11 @@ const UploadPage: React.FC = () => {
     navigate('/analysis')
   }
 
+  const handleBackToDashboard = () => {
+    localStorage.removeItem('viewResumeData')
+    navigate('/dashboard')
+  }
+
   const renderSkillCategory = (title: string, skills: string[] = [], icon: React.ReactNode, color: string) => {
     if (!skills || skills.length === 0) return null
 
@@ -326,159 +350,182 @@ const UploadPage: React.FC = () => {
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
       <div className="text-center">
+        {isViewMode ? (
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={handleBackToDashboard}
+              className="flex items-center px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to Dashboard
+            </button>
+            <div className="flex items-center space-x-2 text-blue-600">
+              <Eye className="h-5 w-5" />
+              <span className="font-medium">Viewing Resume Details</span>
+            </div>
+          </div>
+        ) : null}
+        
         <h1 className="text-3xl font-bold text-slate-900 mb-4">
-          Upload Your Resume
+          {isViewMode ? 'Resume Details' : 'Upload Your Resume'}
         </h1>
         <p className="text-lg text-slate-600">
-          Upload your resume to get comprehensive career insights and recommendations
+          {isViewMode 
+            ? `Viewing details for ${viewData?.filename || 'your resume'}`
+            : 'Upload your resume to get comprehensive career insights and recommendations'
+          }
         </p>
       </div>
 
-      {/* Server Status Indicator */}
-      <div className={`rounded-lg p-4 border ${
-        serverStatus === 'offline' 
-          ? 'bg-red-50 border-red-200' 
-          : serverStatus === 'connected'
-          ? 'bg-green-50 border-green-200'
-          : 'bg-blue-50 border-blue-200'
-      }`}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <div className={`w-3 h-3 rounded-full ${
-              serverStatus === 'offline' 
-                ? 'bg-red-500' 
-                : serverStatus === 'connected'
-                ? 'bg-green-500'
-                : 'bg-blue-500 animate-pulse'
-            }`}></div>
-            <span className={`text-sm font-medium ${
-              serverStatus === 'offline' 
-                ? 'text-red-800' 
-                : serverStatus === 'connected'
-                ? 'text-green-800'
-                : 'text-blue-800'
-            }`}>
-              {serverStatus === 'checking' 
-                ? 'Checking server connection...'
-                : serverStatus === 'offline' 
-                ? 'Server Offline - Please start the backend server'
-                : 'Connected to analysis server'
-              }
-            </span>
+      {/* Server Status Indicator - Only show in upload mode */}
+      {!isViewMode && (
+        <div className={`rounded-lg p-4 border ${
+          serverStatus === 'offline' 
+            ? 'bg-red-50 border-red-200' 
+            : serverStatus === 'connected'
+            ? 'bg-green-50 border-green-200'
+            : 'bg-blue-50 border-blue-200'
+        }`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <div className={`w-3 h-3 rounded-full ${
+                serverStatus === 'offline' 
+                  ? 'bg-red-500' 
+                  : serverStatus === 'connected'
+                  ? 'bg-green-500'
+                  : 'bg-blue-500 animate-pulse'
+              }`}></div>
+              <span className={`text-sm font-medium ${
+                serverStatus === 'offline' 
+                  ? 'text-red-800' 
+                  : serverStatus === 'connected'
+                  ? 'text-green-800'
+                  : 'text-blue-800'
+              }`}>
+                {serverStatus === 'checking' 
+                  ? 'Checking server connection...'
+                  : serverStatus === 'offline' 
+                  ? 'Server Offline - Please start the backend server'
+                  : 'Connected to analysis server'
+                }
+              </span>
+            </div>
+            {serverStatus === 'offline' && (
+              <button
+                onClick={() => window.location.reload()}
+                className="flex items-center px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+              >
+                <RefreshCw className="h-4 w-4 mr-1" />
+                Retry Connection
+              </button>
+            )}
           </div>
-          {serverStatus === 'offline' && (
-            <button
-              onClick={() => window.location.reload()}
-              className="flex items-center px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-            >
-              <RefreshCw className="h-4 w-4 mr-1" />
-              Retry Connection
-            </button>
-          )}
         </div>
-      </div>
+      )}
 
       {!showPreview ? (
         <div className="space-y-6">
-          {/* Upload Area */}
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 cursor-pointer ${
-                isDragActive
-                  ? 'border-blue-500 bg-blue-50'
-                  : uploadedFile
-                  ? 'border-green-500 bg-green-50'
-                  : 'border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50'
-              }`}
-            >
-              <input {...getInputProps()} />
-              
-              {uploadedFile ? (
-                <div className="space-y-4">
-                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-                  <div>
-                    <p className="text-lg font-semibold text-slate-900">
-                      {uploadedFile.name}
-                    </p>
-                    <p className="text-slate-600">
-                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile.type || 'Unknown type'}
-                    </p>
+          {/* Upload Area - Only show in upload mode */}
+          {!isViewMode && (
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 cursor-pointer ${
+                  isDragActive
+                    ? 'border-blue-500 bg-blue-50'
+                    : uploadedFile
+                    ? 'border-green-500 bg-green-50'
+                    : 'border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50'
+                }`}
+              >
+                <input {...getInputProps()} />
+                
+                {uploadedFile ? (
+                  <div className="space-y-4">
+                    <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
+                    <div>
+                      <p className="text-lg font-semibold text-slate-900">
+                        {uploadedFile.name}
+                      </p>
+                      <p className="text-slate-600">
+                        {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile.type || 'Unknown type'}
+                      </p>
+                    </div>
+                    <div className="flex justify-center space-x-4">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleRemoveFile()
+                        }}
+                        className="flex items-center px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+                      >
+                        <X className="h-4 w-4 mr-2" />
+                        Remove
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex justify-center space-x-4">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleRemoveFile()
-                      }}
-                      className="flex items-center px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
-                    >
-                      <X className="h-4 w-4 mr-2" />
-                      Remove
-                    </button>
+                ) : (
+                  <div className="space-y-4">
+                    <Upload className="h-16 w-16 text-slate-400 mx-auto" />
+                    <div>
+                      <p className="text-xl font-semibold text-slate-900 mb-2">
+                        {isDragActive ? 'Drop your resume here' : 'Upload your resume'}
+                      </p>
+                      <p className="text-slate-600">
+                        Drag and drop your file here, or click to browse
+                      </p>
+                      <p className="text-sm text-slate-500 mt-2">
+                        Supports TXT, PDF, and DOCX files (max 10MB)
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <Upload className="h-16 w-16 text-slate-400 mx-auto" />
-                  <div>
-                    <p className="text-xl font-semibold text-slate-900 mb-2">
-                      {isDragActive ? 'Drop your resume here' : 'Upload your resume'}
-                    </p>
-                    <p className="text-slate-600">
-                      Drag and drop your file here, or click to browse
-                    </p>
-                    <p className="text-sm text-slate-500 mt-2">
-                      Supports TXT, PDF, and DOCX files (max 10MB)
-                    </p>
+                )}
+              </div>
+
+              {error && (
+                <div className="mt-4 flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
+                  <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-red-800 font-medium">Analysis Error</p>
+                    <p className="text-red-700 text-sm mt-1">{error}</p>
+                    
+                    {/* Server startup instructions */}
+                    {error.includes('backend server') && (
+                      <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-800">
+                        <strong>To start the backend server:</strong><br />
+                        1. Open a terminal in your project directory<br />
+                        2. Run: <code className="bg-red-200 px-1 rounded">npm run dev</code><br />
+                        3. Wait for "Server running" message<br />
+                        4. Return here and try uploading again
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-            </div>
 
-            {error && (
-              <div className="mt-4 flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <p className="text-red-800 font-medium">Analysis Error</p>
-                  <p className="text-red-700 text-sm mt-1">{error}</p>
-                  
-                  {/* Server startup instructions */}
-                  {error.includes('backend server') && (
-                    <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-800">
-                      <strong>To start the backend server:</strong><br />
-                      1. Open a terminal in your project directory<br />
-                      2. Run: <code className="bg-red-200 px-1 rounded">npm run dev</code><br />
-                      3. Wait for "Server running\" message<br />
-                      4. Return here and try uploading again
-                    </div>
-                  )}
+              {uploadedFile && serverStatus === 'connected' && (
+                <div className="mt-6 flex justify-center">
+                  <button
+                    onClick={handleAnalyze}
+                    disabled={isUploading || isParsing}
+                    className="flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                  >
+                    {isParsing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                        Analyzing Resume...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="h-5 w-5 mr-3" />
+                        Analyze Resume
+                      </>
+                    )}
+                  </button>
                 </div>
-              </div>
-            )}
-
-            {uploadedFile && serverStatus === 'connected' && (
-              <div className="mt-6 flex justify-center">
-                <button
-                  onClick={handleAnalyze}
-                  disabled={isUploading || isParsing}
-                  className="flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
-                >
-                  {isParsing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                      Analyzing Resume...
-                    </>
-                  ) : (
-                    <>
-                      <Brain className="h-5 w-5 mr-3" />
-                      Analyze Resume
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
 
           {/* Processing Steps */}
           {(isUploading || isParsing) && (
@@ -557,15 +604,18 @@ const UploadPage: React.FC = () => {
                       : 'Your resume was processed using standard extraction methods'
                     }
                     {resumeId && ' • Saved to your profile'}
+                    {isViewMode && ' • Viewing from your profile'}
                   </p>
                 </div>
               </div>
-              <button
-                onClick={() => setShowPreview(false)}
-                className="text-slate-400 hover:text-slate-600 transition-colors"
-              >
-                <X className="h-6 w-6" />
-              </button>
+              {!isViewMode && (
+                <button
+                  onClick={() => setShowPreview(false)}
+                  className="text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -880,31 +930,79 @@ const UploadPage: React.FC = () => {
               )}
 
               {/* Next Steps */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">
-                  What's Next?
-                </h3>
-                <p className="text-slate-700 mb-4 text-sm">
-                  Your resume has been successfully analyzed and saved to your profile! Ready to take the next step in your career journey?
-                </p>
-                <div className="space-y-3">
-                  <button 
-                    onClick={handleProceedToAnalysis}
-                    className="w-full flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm"
-                  >
-                    <Brain className="h-4 w-4 mr-2" />
-                    Continue to Analysis
-                    <ArrowRight className="h-4 w-4 ml-2" />
-                  </button>
-                  <button 
-                    onClick={() => navigate('/reports')}
-                    className="w-full flex items-center justify-center px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200 text-sm"
-                  >
-                    <FileText className="h-4 w-4 mr-2" />
-                    Generate Report
-                  </button>
+              {!isViewMode && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-3">
+                    What's Next?
+                  </h3>
+                  <p className="text-slate-700 mb-4 text-sm">
+                    Your resume has been successfully analyzed and saved to your profile! Ready to take the next step in your career journey?
+                  </p>
+                  <div className="space-y-3">
+                    <button 
+                      onClick={handleProceedToAnalysis}
+                      className="w-full flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm"
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      Continue to Analysis
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </button>
+                    <button 
+                      onClick={() => navigate('/reports')}
+                      className="w-full flex items-center justify-center px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200 text-sm"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      Generate Report
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* View Mode Actions */}
+              {isViewMode && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-2xl p-6 border border-blue-200">
+                  <h3 className="text-lg font-semibold text-slate-900 mb-3">
+                    Resume Actions
+                  </h3>
+                  <p className="text-slate-700 mb-4 text-sm">
+                    This resume is saved in your profile. You can continue with analysis or generate reports.
+                  </p>
+                  <div className="space-y-3">
+                    <button 
+                      onClick={() => {
+                        // Store this resume data for analysis
+                        localStorage.setItem('resumeAnalysis', JSON.stringify({
+                          parsedData: parsedData,
+                          aiEnhanced: aiEnhanced,
+                          extractionQuality: extractionQuality,
+                          uploadedAt: viewData?.uploadedAt || new Date().toISOString(),
+                          resumeId: resumeId
+                        }))
+                        navigate('/analysis')
+                      }}
+                      className="w-full flex items-center justify-center px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 text-sm"
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      Start Career Analysis
+                      <ArrowRight className="h-4 w-4 ml-2" />
+                    </button>
+                    <button 
+                      onClick={() => navigate('/reports')}
+                      className="w-full flex items-center justify-center px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200 text-sm"
+                    >
+                      <FileText className="h-4 w-4 mr-2" />
+                      View Reports
+                    </button>
+                    <button 
+                      onClick={handleBackToDashboard}
+                      className="w-full flex items-center justify-center px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200 text-sm"
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Back to Dashboard
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </div>
