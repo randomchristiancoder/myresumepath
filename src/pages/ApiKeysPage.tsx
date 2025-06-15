@@ -37,7 +37,10 @@ import {
   Users,
   Lightbulb,
   Rocket,
-  Shield
+  Shield,
+  ChevronDown,
+  ChevronUp,
+  X
 } from 'lucide-react'
 
 interface ApiKey {
@@ -68,6 +71,8 @@ interface AIModel {
   category: 'text' | 'code' | 'multimodal' | 'embedding' | 'image'
   performance: 'basic' | 'good' | 'excellent'
   recommended?: boolean
+  inputCost?: string
+  outputCost?: string
 }
 
 interface GlobalAISettings {
@@ -93,9 +98,10 @@ const ApiKeysPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
-  const [selectedPricing, setSelectedPricing] = useState<string>('all')
+  const [expandedApiKeys, setExpandedApiKeys] = useState<Record<string, boolean>>({})
+  const [searchTerms, setSearchTerms] = useState<Record<string, string>>({})
+  const [selectedCategories, setSelectedCategories] = useState<Record<string, string>>({})
+  const [selectedPricing, setSelectedPricing] = useState<Record<string, string>>({})
   const [showGlobalSettings, setShowGlobalSettings] = useState(false)
   const [globalSettings, setGlobalSettings] = useState<GlobalAISettings>({
     defaultModel: '',
@@ -137,7 +143,9 @@ const ApiKeysPage: React.FC = () => {
       contextWindow: 128000,
       category: 'multimodal',
       performance: 'excellent',
-      recommended: true
+      recommended: true,
+      inputCost: '$5.00/1M tokens',
+      outputCost: '$15.00/1M tokens'
     },
     {
       id: 'gpt-4-turbo',
@@ -148,7 +156,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'paid',
       contextWindow: 128000,
       category: 'text',
-      performance: 'excellent'
+      performance: 'excellent',
+      inputCost: '$10.00/1M tokens',
+      outputCost: '$30.00/1M tokens'
     },
     {
       id: 'gpt-3.5-turbo',
@@ -159,7 +169,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'paid',
       contextWindow: 16385,
       category: 'text',
-      performance: 'good'
+      performance: 'good',
+      inputCost: '$0.50/1M tokens',
+      outputCost: '$1.50/1M tokens'
     },
 
     // Anthropic Models
@@ -173,7 +185,9 @@ const ApiKeysPage: React.FC = () => {
       contextWindow: 200000,
       category: 'text',
       performance: 'excellent',
-      recommended: true
+      recommended: true,
+      inputCost: '$15.00/1M tokens',
+      outputCost: '$75.00/1M tokens'
     },
     {
       id: 'claude-3-sonnet',
@@ -184,7 +198,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'paid',
       contextWindow: 200000,
       category: 'text',
-      performance: 'excellent'
+      performance: 'excellent',
+      inputCost: '$3.00/1M tokens',
+      outputCost: '$15.00/1M tokens'
     },
     {
       id: 'claude-3-haiku',
@@ -195,7 +211,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'paid',
       contextWindow: 200000,
       category: 'text',
-      performance: 'good'
+      performance: 'good',
+      inputCost: '$0.25/1M tokens',
+      outputCost: '$1.25/1M tokens'
     },
 
     // Google Models
@@ -208,7 +226,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'freemium',
       contextWindow: 32768,
       category: 'multimodal',
-      performance: 'excellent'
+      performance: 'excellent',
+      inputCost: 'Free tier available',
+      outputCost: '$0.50/1M tokens'
     },
     {
       id: 'gemini-pro-vision',
@@ -219,7 +239,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'freemium',
       contextWindow: 16384,
       category: 'multimodal',
-      performance: 'excellent'
+      performance: 'excellent',
+      inputCost: 'Free tier available',
+      outputCost: '$0.50/1M tokens'
     },
 
     // OpenRouter Models (Free)
@@ -233,7 +255,9 @@ const ApiKeysPage: React.FC = () => {
       contextWindow: 32768,
       category: 'text',
       performance: 'good',
-      recommended: true
+      recommended: true,
+      inputCost: 'FREE',
+      outputCost: 'FREE'
     },
     {
       id: 'microsoft/phi-3-mini-128k-instruct:free',
@@ -244,7 +268,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'free',
       contextWindow: 128000,
       category: 'text',
-      performance: 'good'
+      performance: 'good',
+      inputCost: 'FREE',
+      outputCost: 'FREE'
     },
     {
       id: 'google/gemma-7b-it:free',
@@ -255,7 +281,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'free',
       contextWindow: 8192,
       category: 'text',
-      performance: 'good'
+      performance: 'good',
+      inputCost: 'FREE',
+      outputCost: 'FREE'
     },
     {
       id: 'meta-llama/llama-3-8b-instruct:free',
@@ -266,7 +294,35 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'free',
       contextWindow: 8192,
       category: 'text',
-      performance: 'good'
+      performance: 'good',
+      inputCost: 'FREE',
+      outputCost: 'FREE'
+    },
+    {
+      id: 'openchat/openchat-7b:free',
+      name: 'OpenChat 7B (Free)',
+      provider: 'openrouter',
+      description: 'High-performance open-source chat model',
+      capabilities: ['Text Generation', 'Conversation', 'Analysis'],
+      pricing: 'free',
+      contextWindow: 8192,
+      category: 'text',
+      performance: 'good',
+      inputCost: 'FREE',
+      outputCost: 'FREE'
+    },
+    {
+      id: 'nousresearch/nous-capybara-7b:free',
+      name: 'Nous Capybara 7B (Free)',
+      provider: 'openrouter',
+      description: 'Fine-tuned model for instruction following',
+      capabilities: ['Text Generation', 'Analysis', 'Code'],
+      pricing: 'free',
+      contextWindow: 4096,
+      category: 'text',
+      performance: 'good',
+      inputCost: 'FREE',
+      outputCost: 'FREE'
     },
 
     // Cohere Models
@@ -279,7 +335,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'paid',
       contextWindow: 128000,
       category: 'text',
-      performance: 'excellent'
+      performance: 'excellent',
+      inputCost: '$3.00/1M tokens',
+      outputCost: '$15.00/1M tokens'
     },
     {
       id: 'command-r',
@@ -290,7 +348,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'paid',
       contextWindow: 128000,
       category: 'text',
-      performance: 'good'
+      performance: 'good',
+      inputCost: '$0.50/1M tokens',
+      outputCost: '$1.50/1M tokens'
     },
 
     // Hugging Face Models (Free)
@@ -303,7 +363,9 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'free',
       contextWindow: 1024,
       category: 'text',
-      performance: 'basic'
+      performance: 'basic',
+      inputCost: 'FREE',
+      outputCost: 'FREE'
     },
     {
       id: 'facebook/blenderbot-400M-distill',
@@ -314,7 +376,39 @@ const ApiKeysPage: React.FC = () => {
       pricing: 'free',
       contextWindow: 512,
       category: 'text',
-      performance: 'basic'
+      performance: 'basic',
+      inputCost: 'FREE',
+      outputCost: 'FREE'
+    },
+
+    // Replicate Models
+    {
+      id: 'meta/llama-2-70b-chat',
+      name: 'Llama 2 70B Chat',
+      provider: 'replicate',
+      description: 'Large language model for chat applications',
+      capabilities: ['Text Generation', 'Conversation', 'Code'],
+      pricing: 'paid',
+      contextWindow: 4096,
+      category: 'text',
+      performance: 'excellent',
+      inputCost: '$0.65/1M tokens',
+      outputCost: '$2.75/1M tokens'
+    },
+
+    // Perplexity Models
+    {
+      id: 'llama-3-sonar-large-32k-online',
+      name: 'Llama 3 Sonar Large',
+      provider: 'perplexity',
+      description: 'Search-augmented language model',
+      capabilities: ['Text Generation', 'Search', 'Analysis'],
+      pricing: 'paid',
+      contextWindow: 32768,
+      category: 'text',
+      performance: 'excellent',
+      inputCost: '$1.00/1M tokens',
+      outputCost: '$1.00/1M tokens'
     }
   ]
 
@@ -509,6 +603,13 @@ const ApiKeysPage: React.FC = () => {
     }))
   }
 
+  const toggleApiKeyExpansion = (id: string) => {
+    setExpandedApiKeys(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }))
+  }
+
   const getProviderInfo = (providerId: string) => {
     return providers.find(p => p.id === providerId) || { 
       name: providerId, 
@@ -518,26 +619,27 @@ const ApiKeysPage: React.FC = () => {
     }
   }
 
-  const getAvailableModels = () => {
-    const userProviders = apiKeys.map(key => key.provider)
-    return aiModels.filter(model => 
-      userProviders.includes(model.provider) || model.pricing === 'free'
-    )
+  const getModelsForProvider = (providerId: string) => {
+    return aiModels.filter(model => model.provider === providerId)
   }
 
-  const filteredModels = getAvailableModels().filter(model => {
-    const matchesSearch = model.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         model.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         model.capabilities.some(cap => cap.toLowerCase().includes(searchTerm.toLowerCase()))
-    
-    const matchesCategory = selectedCategory === 'all' || model.category === selectedCategory
-    const matchesPricing = selectedPricing === 'all' || model.pricing === selectedPricing
-    
-    return matchesSearch && matchesCategory && matchesPricing
-  })
+  const getFilteredModels = (providerId: string) => {
+    const models = getModelsForProvider(providerId)
+    const searchTerm = searchTerms[providerId] || ''
+    const category = selectedCategories[providerId] || 'all'
+    const pricing = selectedPricing[providerId] || 'all'
 
-  const freeModels = filteredModels.filter(model => model.pricing === 'free')
-  const paidModels = filteredModels.filter(model => model.pricing !== 'free')
+    return models.filter(model => {
+      const matchesSearch = model.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           model.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           model.capabilities.some(cap => cap.toLowerCase().includes(searchTerm.toLowerCase()))
+      
+      const matchesCategory = category === 'all' || model.category === category
+      const matchesPricing = pricing === 'all' || model.pricing === pricing
+      
+      return matchesSearch && matchesCategory && matchesPricing
+    })
+  }
 
   const getCategoryIcon = (category: string) => {
     switch (category) {
@@ -583,7 +685,7 @@ const ApiKeysPage: React.FC = () => {
         <div>
           <h1 className="text-3xl font-bold text-slate-900">AI Configuration</h1>
           <p className="text-slate-600 mt-2">
-            Manage your AI API keys and configure models for different features
+            Manage your AI API keys and explore available models for each provider
           </p>
         </div>
         <div className="flex items-center space-x-3 mt-4 md:mt-0">
@@ -674,7 +776,7 @@ const ApiKeysPage: React.FC = () => {
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="">Select default model...</option>
-                    {getAvailableModels().map(model => (
+                    {aiModels.map(model => (
                       <option key={model.id} value={model.id}>
                         {model.name} ({model.provider})
                         {model.pricing === 'free' && ' - FREE'}
@@ -696,7 +798,7 @@ const ApiKeysPage: React.FC = () => {
                     className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500"
                   >
                     <option value="">Select fallback model...</option>
-                    {getAvailableModels().filter(model => model.pricing === 'free').map(model => (
+                    {aiModels.filter(model => model.pricing === 'free').map(model => (
                       <option key={model.id} value={model.id}>
                         {model.name} ({model.provider}) - FREE
                       </option>
@@ -726,7 +828,7 @@ const ApiKeysPage: React.FC = () => {
                         className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Select model...</option>
-                        {getAvailableModels().map(model => (
+                        {aiModels.map(model => (
                           <option key={model.id} value={model.id}>
                             {model.name} ({model.provider})
                             {model.pricing === 'free' && ' - FREE'}
@@ -752,243 +854,6 @@ const ApiKeysPage: React.FC = () => {
         </div>
       )}
 
-      {/* AI Model Search and Browser */}
-      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-slate-900 flex items-center">
-            <Search className="h-6 w-6 mr-3 text-blue-600" />
-            AI Model Browser
-          </h2>
-          <div className="flex items-center space-x-2 text-sm text-slate-600">
-            <Gift className="h-4 w-4 text-green-600" />
-            <span>{freeModels.length} free models available</span>
-          </div>
-        </div>
-
-        {/* Search and Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="md:col-span-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search models by name, description, or capabilities..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Categories</option>
-              <option value="text">Text Generation</option>
-              <option value="code">Code Generation</option>
-              <option value="multimodal">Multimodal</option>
-              <option value="embedding">Embeddings</option>
-              <option value="image">Image Generation</option>
-            </select>
-          </div>
-
-          <div>
-            <select
-              value={selectedPricing}
-              onChange={(e) => setSelectedPricing(e.target.value)}
-              className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="all">All Pricing</option>
-              <option value="free">Free Only</option>
-              <option value="paid">Paid Only</option>
-              <option value="freemium">Freemium</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Free Models Section */}
-        {freeModels.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center mb-4">
-              <Gift className="h-5 w-5 text-green-600 mr-2" />
-              <h3 className="text-lg font-semibold text-green-900">Free Models</h3>
-              <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
-                {freeModels.length} available
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {freeModels.map(model => {
-                const CategoryIcon = getCategoryIcon(model.category)
-                const providerInfo = getProviderInfo(model.provider)
-                
-                return (
-                  <div key={model.id} className="border border-green-200 rounded-lg p-4 bg-green-50 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <CategoryIcon className="h-5 w-5 text-green-600" />
-                        <h4 className="font-semibold text-slate-900">{model.name}</h4>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPricingColor(model.pricing)}`}>
-                          FREE
-                        </span>
-                        {model.recommended && (
-                          <Crown className="h-4 w-4 text-yellow-500" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    <p className="text-slate-600 text-sm mb-3">{model.description}</p>
-                    
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Provider:</span>
-                        <span className="font-medium text-slate-700">{providerInfo.name}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Context:</span>
-                        <span className="font-medium text-slate-700">{model.contextWindow.toLocaleString()} tokens</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Performance:</span>
-                        <span className={`font-medium ${getPerformanceColor(model.performance)}`}>
-                          {model.performance}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {model.capabilities.slice(0, 3).map(cap => (
-                        <span key={cap} className="px-2 py-1 bg-green-200 text-green-800 rounded text-xs">
-                          {cap}
-                        </span>
-                      ))}
-                      {model.capabilities.length > 3 && (
-                        <span className="px-2 py-1 bg-slate-200 text-slate-600 rounded text-xs">
-                          +{model.capabilities.length - 3} more
-                        </span>
-                      )}
-                    </div>
-                    
-                    <button className="w-full flex items-center justify-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
-                      <Zap className="h-4 w-4 mr-2" />
-                      Use This Model
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Paid Models Section */}
-        {paidModels.length > 0 && (
-          <div>
-            <div className="flex items-center mb-4">
-              <Crown className="h-5 w-5 text-blue-600 mr-2" />
-              <h3 className="text-lg font-semibold text-blue-900">Premium Models</h3>
-              <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-                {paidModels.length} available
-              </span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {paidModels.map(model => {
-                const CategoryIcon = getCategoryIcon(model.category)
-                const providerInfo = getProviderInfo(model.provider)
-                const hasApiKey = apiKeys.some(key => key.provider === model.provider)
-                
-                return (
-                  <div key={model.id} className={`border rounded-lg p-4 hover:shadow-md transition-shadow ${
-                    hasApiKey ? 'border-blue-200 bg-blue-50' : 'border-slate-200 bg-slate-50'
-                  }`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-2">
-                        <CategoryIcon className={`h-5 w-5 ${hasApiKey ? 'text-blue-600' : 'text-slate-400'}`} />
-                        <h4 className="font-semibold text-slate-900">{model.name}</h4>
-                      </div>
-                      <div className="flex items-center space-x-1">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPricingColor(model.pricing)}`}>
-                          {model.pricing.toUpperCase()}
-                        </span>
-                        {model.recommended && (
-                          <Crown className="h-4 w-4 text-yellow-500" />
-                        )}
-                        {!hasApiKey && (
-                          <Lock className="h-4 w-4 text-slate-400" />
-                        )}
-                      </div>
-                    </div>
-                    
-                    <p className="text-slate-600 text-sm mb-3">{model.description}</p>
-                    
-                    <div className="space-y-2 mb-3">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Provider:</span>
-                        <span className="font-medium text-slate-700">{providerInfo.name}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Context:</span>
-                        <span className="font-medium text-slate-700">{model.contextWindow.toLocaleString()} tokens</span>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Performance:</span>
-                        <span className={`font-medium ${getPerformanceColor(model.performance)}`}>
-                          {model.performance}
-                        </span>
-                      </div>
-                    </div>
-                    
-                    <div className="flex flex-wrap gap-1 mb-3">
-                      {model.capabilities.slice(0, 3).map(cap => (
-                        <span key={cap} className={`px-2 py-1 rounded text-xs ${
-                          hasApiKey ? 'bg-blue-200 text-blue-800' : 'bg-slate-200 text-slate-600'
-                        }`}>
-                          {cap}
-                        </span>
-                      ))}
-                      {model.capabilities.length > 3 && (
-                        <span className="px-2 py-1 bg-slate-200 text-slate-600 rounded text-xs">
-                          +{model.capabilities.length - 3} more
-                        </span>
-                      )}
-                    </div>
-                    
-                    {hasApiKey ? (
-                      <button className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                        <Zap className="h-4 w-4 mr-2" />
-                        Use This Model
-                      </button>
-                    ) : (
-                      <button 
-                        onClick={() => {
-                          setNewApiKey(prev => ({ ...prev, provider: model.provider }))
-                          setShowAddForm(true)
-                        }}
-                        className="w-full flex items-center justify-center px-3 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-100 transition-colors text-sm"
-                      >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add {providerInfo.name} API Key
-                      </button>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {filteredModels.length === 0 && (
-          <div className="text-center py-12">
-            <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No models found</h3>
-            <p className="text-slate-600">Try adjusting your search criteria or add more API keys</p>
-          </div>
-        )}
-      </div>
-
       {/* API Keys List */}
       <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
         <h2 className="text-xl font-semibold text-slate-900 mb-6 flex items-center">
@@ -1010,80 +875,324 @@ const ApiKeysPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {apiKeys.map((apiKey) => {
               const providerInfo = getProviderInfo(apiKey.provider)
               const IconComponent = providerInfo.icon
+              const isExpanded = expandedApiKeys[apiKey.id]
+              const filteredModels = getFilteredModels(apiKey.provider)
+              const freeModels = filteredModels.filter(model => model.pricing === 'free')
+              const paidModels = filteredModels.filter(model => model.pricing !== 'free')
               
               return (
-                <div key={apiKey.id} className="border border-slate-200 rounded-xl p-6 hover:shadow-lg transition-all duration-200">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center space-x-4">
-                      <div className={`p-3 rounded-xl bg-gradient-to-r ${providerInfo.color}`}>
-                        <IconComponent className="h-6 w-6 text-white" />
+                <div key={apiKey.id} className="border border-slate-200 rounded-xl overflow-hidden">
+                  {/* API Key Header */}
+                  <div className="p-6 bg-slate-50">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center space-x-4">
+                        <div className={`p-3 rounded-xl bg-gradient-to-r ${providerInfo.color}`}>
+                          <IconComponent className="h-6 w-6 text-white" />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-slate-900">{providerInfo.name}</h3>
+                          <p className="text-slate-600 text-sm">{providerInfo.description}</p>
+                          <p className="text-slate-500 text-xs mt-1">
+                            Added {new Date(apiKey.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-slate-900">{providerInfo.name}</h3>
-                        <p className="text-slate-600 text-sm">{providerInfo.description}</p>
-                        <p className="text-slate-500 text-xs mt-1">
-                          Added {new Date(apiKey.created_at).toLocaleDateString()}
-                        </p>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                          Active
+                        </span>
+                        <button
+                          onClick={() => toggleApiKeyExpansion(apiKey.id)}
+                          className="p-2 text-slate-600 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-colors"
+                        >
+                          {isExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                        </button>
+                        <button
+                          onClick={() => deleteApiKey(apiKey.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
-                        Active
-                      </span>
-                      <button
-                        onClick={() => deleteApiKey(apiKey.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-slate-700 mb-2">API Key</label>
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type={showPasswords[apiKey.id] ? 'text' : 'password'}
+                          value={apiKey.api_key}
+                          readOnly
+                          className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 font-mono text-sm"
+                        />
+                        <button
+                          onClick={() => togglePasswordVisibility(apiKey.id)}
+                          className="p-2 text-slate-600 hover:text-slate-800 transition-colors"
+                        >
+                          {showPasswords[apiKey.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-slate-700 mb-3">Feature Usage Settings</label>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {Object.entries(featureLabels).map(([key, feature]) => (
+                          <label key={key} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={apiKey.usage_settings[key as keyof typeof apiKey.usage_settings]}
+                              onChange={(e) => {
+                                const newSettings = {
+                                  ...apiKey.usage_settings,
+                                  [key]: e.target.checked
+                                }
+                                updateUsageSettings(apiKey.id, newSettings)
+                              }}
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            />
+                            <feature.icon className="h-4 w-4 text-slate-500" />
+                            <span className="text-sm text-slate-700">{feature.label}</span>
+                          </label>
+                        ))}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium text-slate-700 mb-2">API Key</label>
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type={showPasswords[apiKey.id] ? 'text' : 'password'}
-                        value={apiKey.api_key}
-                        readOnly
-                        className="flex-1 px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 text-slate-600 font-mono text-sm"
-                      />
-                      <button
-                        onClick={() => togglePasswordVisibility(apiKey.id)}
-                        className="p-2 text-slate-600 hover:text-slate-800 transition-colors"
-                      >
-                        {showPasswords[apiKey.id] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
+                  {/* AI Models Browser */}
+                  {isExpanded && (
+                    <div className="p-6 border-t border-slate-200">
+                      <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-lg font-semibold text-slate-900 flex items-center">
+                          <Brain className="h-5 w-5 mr-2 text-purple-600" />
+                          Available AI Models
+                          <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                            {filteredModels.length} models
+                          </span>
+                          {freeModels.length > 0 && (
+                            <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                              {freeModels.length} FREE
+                            </span>
+                          )}
+                        </h4>
+                      </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-3">Feature Usage Settings</label>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      {Object.entries(featureLabels).map(([key, feature]) => (
-                        <label key={key} className="flex items-center space-x-2 p-2 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer">
+                      {/* Search and Filters */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                           <input
-                            type="checkbox"
-                            checked={apiKey.usage_settings[key as keyof typeof apiKey.usage_settings]}
-                            onChange={(e) => {
-                              const newSettings = {
-                                ...apiKey.usage_settings,
-                                [key]: e.target.checked
-                              }
-                              updateUsageSettings(apiKey.id, newSettings)
-                            }}
-                            className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            type="text"
+                            placeholder="Search models..."
+                            value={searchTerms[apiKey.provider] || ''}
+                            onChange={(e) => setSearchTerms(prev => ({
+                              ...prev,
+                              [apiKey.provider]: e.target.value
+                            }))}
+                            className="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                           />
-                          <feature.icon className="h-4 w-4 text-slate-500" />
-                          <span className="text-sm text-slate-700">{feature.label}</span>
-                        </label>
-                      ))}
+                        </div>
+
+                        <select
+                          value={selectedCategories[apiKey.provider] || 'all'}
+                          onChange={(e) => setSelectedCategories(prev => ({
+                            ...prev,
+                            [apiKey.provider]: e.target.value
+                          }))}
+                          className="border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">All Categories</option>
+                          <option value="text">Text Generation</option>
+                          <option value="code">Code Generation</option>
+                          <option value="multimodal">Multimodal</option>
+                          <option value="embedding">Embeddings</option>
+                          <option value="image">Image Generation</option>
+                        </select>
+
+                        <select
+                          value={selectedPricing[apiKey.provider] || 'all'}
+                          onChange={(e) => setSelectedPricing(prev => ({
+                            ...prev,
+                            [apiKey.provider]: e.target.value
+                          }))}
+                          className="border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="all">All Pricing</option>
+                          <option value="free">Free Only</option>
+                          <option value="paid">Paid Only</option>
+                          <option value="freemium">Freemium</option>
+                        </select>
+                      </div>
+
+                      {/* Free Models Section */}
+                      {freeModels.length > 0 && (
+                        <div className="mb-8">
+                          <div className="flex items-center mb-4">
+                            <Gift className="h-5 w-5 text-green-600 mr-2" />
+                            <h5 className="text-lg font-semibold text-green-900">Free Models</h5>
+                            <span className="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-medium">
+                              {freeModels.length} available
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {freeModels.map(model => {
+                              const CategoryIcon = getCategoryIcon(model.category)
+                              
+                              return (
+                                <div key={model.id} className="border border-green-200 rounded-lg p-4 bg-green-50 hover:shadow-md transition-shadow">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center space-x-2">
+                                      <CategoryIcon className="h-5 w-5 text-green-600" />
+                                      <h6 className="font-semibold text-slate-900">{model.name}</h6>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <span className="px-2 py-1 bg-green-200 text-green-800 rounded-full text-xs font-bold">
+                                        FREE
+                                      </span>
+                                      {model.recommended && (
+                                        <Crown className="h-4 w-4 text-yellow-500" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <p className="text-slate-600 text-sm mb-3">{model.description}</p>
+                                  
+                                  <div className="space-y-2 mb-3">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-slate-500">Context:</span>
+                                      <span className="font-medium text-slate-700">{model.contextWindow.toLocaleString()} tokens</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-slate-500">Performance:</span>
+                                      <span className={`font-medium ${getPerformanceColor(model.performance)}`}>
+                                        {model.performance}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-slate-500">Cost:</span>
+                                      <span className="font-bold text-green-600">FREE</span>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex flex-wrap gap-1 mb-3">
+                                    {model.capabilities.slice(0, 3).map(cap => (
+                                      <span key={cap} className="px-2 py-1 bg-green-200 text-green-800 rounded text-xs">
+                                        {cap}
+                                      </span>
+                                    ))}
+                                    {model.capabilities.length > 3 && (
+                                      <span className="px-2 py-1 bg-slate-200 text-slate-600 rounded text-xs">
+                                        +{model.capabilities.length - 3} more
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  <button className="w-full flex items-center justify-center px-3 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm">
+                                    <Zap className="h-4 w-4 mr-2" />
+                                    Use This Model
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Paid Models Section */}
+                      {paidModels.length > 0 && (
+                        <div>
+                          <div className="flex items-center mb-4">
+                            <Crown className="h-5 w-5 text-blue-600 mr-2" />
+                            <h5 className="text-lg font-semibold text-blue-900">Premium Models</h5>
+                            <span className="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
+                              {paidModels.length} available
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {paidModels.map(model => {
+                              const CategoryIcon = getCategoryIcon(model.category)
+                              
+                              return (
+                                <div key={model.id} className="border border-blue-200 rounded-lg p-4 bg-blue-50 hover:shadow-md transition-shadow">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex items-center space-x-2">
+                                      <CategoryIcon className="h-5 w-5 text-blue-600" />
+                                      <h6 className="font-semibold text-slate-900">{model.name}</h6>
+                                    </div>
+                                    <div className="flex items-center space-x-1">
+                                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPricingColor(model.pricing)}`}>
+                                        {model.pricing.toUpperCase()}
+                                      </span>
+                                      {model.recommended && (
+                                        <Crown className="h-4 w-4 text-yellow-500" />
+                                      )}
+                                    </div>
+                                  </div>
+                                  
+                                  <p className="text-slate-600 text-sm mb-3">{model.description}</p>
+                                  
+                                  <div className="space-y-2 mb-3">
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-slate-500">Context:</span>
+                                      <span className="font-medium text-slate-700">{model.contextWindow.toLocaleString()} tokens</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-xs">
+                                      <span className="text-slate-500">Performance:</span>
+                                      <span className={`font-medium ${getPerformanceColor(model.performance)}`}>
+                                        {model.performance}
+                                      </span>
+                                    </div>
+                                    {model.inputCost && (
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="text-slate-500">Input Cost:</span>
+                                        <span className="font-medium text-slate-700">{model.inputCost}</span>
+                                      </div>
+                                    )}
+                                    {model.outputCost && (
+                                      <div className="flex items-center justify-between text-xs">
+                                        <span className="text-slate-500">Output Cost:</span>
+                                        <span className="font-medium text-slate-700">{model.outputCost}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  
+                                  <div className="flex flex-wrap gap-1 mb-3">
+                                    {model.capabilities.slice(0, 3).map(cap => (
+                                      <span key={cap} className="px-2 py-1 bg-blue-200 text-blue-800 rounded text-xs">
+                                        {cap}
+                                      </span>
+                                    ))}
+                                    {model.capabilities.length > 3 && (
+                                      <span className="px-2 py-1 bg-slate-200 text-slate-600 rounded text-xs">
+                                        +{model.capabilities.length - 3} more
+                                      </span>
+                                    )}
+                                  </div>
+                                  
+                                  <button className="w-full flex items-center justify-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                    <Zap className="h-4 w-4 mr-2" />
+                                    Use This Model
+                                  </button>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {filteredModels.length === 0 && (
+                        <div className="text-center py-12">
+                          <Search className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                          <h3 className="text-lg font-medium text-slate-900 mb-2">No models found</h3>
+                          <p className="text-slate-600">Try adjusting your search criteria</p>
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
                 </div>
               )
             })}
