@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { 
+  LayoutDashboard, 
   Upload, 
   Target, 
   FileText, 
@@ -19,7 +20,7 @@ import {
   Eye,
   ExternalLink
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 interface DashboardStats {
   resumesUploaded: number
@@ -53,6 +54,7 @@ interface LatestResume {
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [stats, setStats] = useState<DashboardStats>({
     resumesUploaded: 0,
     skillsAnalyzed: 0,
@@ -173,26 +175,38 @@ const Dashboard: React.FC = () => {
 
   const handleViewResumeDetails = async (resumeId: string) => {
     try {
+      console.log('Viewing resume details for ID:', resumeId)
+      
       const { data: resume, error } = await supabase
         .from('resumes')
         .select('*')
         .eq('id', resumeId)
         .single()
 
-      if (error) throw error
+      if (error) {
+        console.error('Error fetching resume:', error)
+        throw error
+      }
+
+      console.log('Resume data fetched:', resume)
 
       // Store resume data for viewing
-      localStorage.setItem('viewResumeData', JSON.stringify({
+      const viewData = {
         parsedData: resume.parsed_data,
         filename: resume.filename,
         uploadedAt: resume.created_at,
-        resumeId: resume.id
-      }))
+        resumeId: resume.id,
+        content: resume.content
+      }
+
+      localStorage.setItem('viewResumeData', JSON.stringify(viewData))
+      console.log('Stored view data:', viewData)
 
       // Navigate to upload page in view mode
-      window.location.href = '/upload?view=true'
+      navigate('/upload?view=true')
     } catch (error) {
       console.error('Error fetching resume details:', error)
+      alert('Unable to load resume details. Please try again.')
     }
   }
 
@@ -444,9 +458,14 @@ const Dashboard: React.FC = () => {
                 {recentActivity.map((activity, index) => (
                   <div 
                     key={index} 
-                    className={`flex items-start space-x-3 p-3 rounded-lg border transition-all duration-200 cursor-pointer ${getActivityColor(activity.type)}`}
+                    className={`flex items-start space-x-3 p-3 rounded-lg border transition-all duration-200 ${
+                      activity.type === 'resume_upload' && activity.metadata?.resumeId 
+                        ? `cursor-pointer ${getActivityColor(activity.type)}` 
+                        : getActivityColor(activity.type)
+                    }`}
                     onClick={() => {
                       if (activity.type === 'resume_upload' && activity.metadata?.resumeId) {
+                        console.log('Clicked resume activity:', activity)
                         handleViewResumeDetails(activity.metadata.resumeId)
                       }
                     }}
@@ -459,7 +478,7 @@ const Dashboard: React.FC = () => {
                         <p className="text-sm font-medium text-slate-900">
                           {activity.title}
                         </p>
-                        {activity.type === 'resume_upload' && (
+                        {activity.type === 'resume_upload' && activity.metadata?.resumeId && (
                           <Eye className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors" />
                         )}
                       </div>
@@ -486,6 +505,11 @@ const Dashboard: React.FC = () => {
                           <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
                             {activity.metadata.experienceLevel}
                           </span>
+                        </div>
+                      )}
+                      {activity.type === 'resume_upload' && activity.metadata?.resumeId && (
+                        <div className="mt-2 text-xs text-blue-600 font-medium">
+                          Click to view details →
                         </div>
                       )}
                     </div>
