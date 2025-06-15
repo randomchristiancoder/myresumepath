@@ -179,45 +179,24 @@ const UploadPage: React.FC = () => {
     setError(null)
 
     try {
-      // Try both HTTP and HTTPS endpoints
-      const serverUrls = ['http://localhost:3001', 'https://localhost:3001']
-      let uploadSuccess = false
-      let result = null
-      let lastError = null
+      const formData = new FormData()
+      formData.append('resume', uploadedFile)
+      formData.append('userId', user.id)
 
-      for (const serverUrl of serverUrls) {
-        try {
-          const formData = new FormData()
-          formData.append('resume', uploadedFile)
-          formData.append('userId', user.id)
+      const response = await fetch('http://localhost:3001/api/upload-resume', {
+        method: 'POST',
+        body: formData,
+        mode: 'cors',
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      })
 
-          const response = await fetch(`${serverUrl}/api/upload-resume`, {
-            method: 'POST',
-            body: formData,
-            mode: 'cors',
-            signal: AbortSignal.timeout(30000) // 30 second timeout
-          })
-
-          if (response.ok) {
-            result = await response.json()
-            uploadSuccess = true
-            setServerStatus('connected')
-            break
-          } else {
-            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
-            lastError = new Error(errorData.error || `Upload failed with status ${response.status}`)
-          }
-        } catch (fetchError: any) {
-          lastError = fetchError
-          console.log(`Failed to connect to ${serverUrl}:`, fetchError.message)
-          continue
-        }
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        throw new Error(errorData.error || `Upload failed with status ${response.status}`)
       }
 
-      if (!uploadSuccess || !result) {
-        setServerStatus('offline')
-        throw lastError || new Error('Unable to connect to server')
-      }
+      const result = await response.json()
+      setServerStatus('connected')
 
       if (!result.success || !result.parsedData) {
         throw new Error('Invalid response from server')
@@ -246,8 +225,6 @@ const UploadPage: React.FC = () => {
         errorMessage = 'Request timed out. Please check your connection and try again.'
       } else if (err.message?.includes('NetworkError') || err.message?.includes('Failed to fetch')) {
         errorMessage = 'Cannot connect to the analysis server. Please ensure the backend server is running on port 3001.'
-      } else if (err.message?.includes('SSL') || err.message?.includes('certificate')) {
-        errorMessage = 'SSL certificate error. Please visit https://localhost:3001/api/health in a new tab and accept the security warning, then try again.'
       } else if (err.message) {
         errorMessage = err.message
       }
@@ -311,7 +288,7 @@ const UploadPage: React.FC = () => {
           Upload Your Resume
         </h1>
         <p className="text-lg text-slate-600">
-          Upload your resume to get comprehensive AI-powered career insights and recommendations
+          Upload your resume to get comprehensive career insights and recommendations
         </p>
       </div>
 
@@ -432,22 +409,6 @@ const UploadPage: React.FC = () => {
                       2. Run: <code className="bg-red-200 px-1 rounded">npm run server</code><br />
                       3. Wait for "Server running" message<br />
                       4. Return here and try uploading again
-                    </div>
-                  )}
-
-                  {/* SSL certificate help */}
-                  {error.includes('SSL certificate') && (
-                    <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-800">
-                      <strong>SSL Certificate Issue:</strong><br />
-                      <a
-                        href="https://localhost:3001/api/health"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center px-2 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700 transition-colors mt-2"
-                      >
-                        <ExternalLink className="h-3 w-3 mr-1" />
-                        Trust Certificate
-                      </a>
                     </div>
                   )}
                 </div>

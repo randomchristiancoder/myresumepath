@@ -2,10 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import multer from 'multer';
 import path from 'path';
-import https from 'https';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
-import { getSSLConfig } from './ssl-config.js';
 import pdfParse from 'pdf-parse';
 import mammoth from 'mammoth';
 import apiRoutes from './routes/api.js';
@@ -19,7 +17,7 @@ const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:5173', 'https://localhost:5173'],
+  origin: ['http://localhost:5173', 'http://localhost:3000'],
   credentials: true
 }));
 app.use(express.json());
@@ -322,7 +320,7 @@ app.get('/api/health', (req, res) => {
     status: 'OK', 
     message: 'Server is running',
     timestamp: new Date().toISOString(),
-    ssl: req.secure || req.headers['x-forwarded-proto'] === 'https',
+    ssl: false,
     uptime: process.uptime(),
     memory: process.memoryUsage()
   });
@@ -470,8 +468,8 @@ app.get('/api/validate/system', (req, res) => {
         connection: true
       },
       ssl: {
-        enabled: req.secure || req.headers['x-forwarded-proto'] === 'https',
-        certificate: req.secure ? 'Valid' : 'Not configured'
+        enabled: false,
+        certificate: 'Not configured'
       },
       endpoints: {
         health: { status: 'operational', method: 'GET' },
@@ -527,30 +525,9 @@ app.use('*', (req, res) => {
   res.status(404).json({ error: 'Endpoint not found' });
 });
 
-// Start server with HTTPS if SSL config is available, otherwise HTTP
-try {
-  const sslConfig = getSSLConfig();
-  if (sslConfig && sslConfig.available) {
-    https.createServer(sslConfig, app).listen(PORT, () => {
-      console.log(`✅ HTTPS Server running on port ${PORT}`);
-      console.log(`🔒 SSL certificates loaded successfully`);
-      console.log(`📡 Health check: https://localhost:${PORT}/api/health`);
-      console.log(`📄 Resume upload: https://localhost:${PORT}/api/upload-resume`);
-    });
-  } else {
-    app.listen(PORT, () => {
-      console.log(`✅ HTTP Server running on port ${PORT}`);
-      console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
-      console.log(`📄 Resume upload: http://localhost:${PORT}/api/upload-resume`);
-      console.log(`⚠️  Running without SSL - consider adding certificates for production`);
-    });
-  }
-} catch (error) {
-  console.log('⚠️  SSL configuration failed, starting HTTP server');
-  console.error('SSL Error:', error.message);
-  app.listen(PORT, () => {
-    console.log(`✅ HTTP Server running on port ${PORT}`);
-    console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`📄 Resume upload: http://localhost:${PORT}/api/upload-resume`);
-  });
-}
+// Start HTTP server
+app.listen(PORT, () => {
+  console.log(`✅ HTTP Server running on port ${PORT}`);
+  console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
+  console.log(`📄 Resume upload: http://localhost:${PORT}/api/upload-resume`);
+});
