@@ -384,6 +384,7 @@ app.post('/api/upload-resume', upload.single('resume'), async (req, res) => {
       extractionQuality,
       aiEnhanced,
       parsedData,
+      content: extractedText,
       uploadedAt: new Date().toISOString()
     });
     
