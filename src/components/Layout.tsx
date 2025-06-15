@@ -25,7 +25,9 @@ import {
   TrendingUp,
   Award,
   MousePointer,
-  ChevronRight
+  ChevronRight,
+  Trophy,
+  BarChart3
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -338,6 +340,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       description: 'Generated reports'
     },
     { 
+      name: 'Progress', 
+      href: '/progress', 
+      icon: Trophy,
+      description: 'Track achievements'
+    },
+    { 
       name: 'API Keys', 
       href: '/api-keys', 
       icon: Key,
@@ -623,12 +631,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   <button
                     onClick={() => {
                       setUserMenuOpen(false)
-                      navigate('/reports')
+                      navigate('/progress')
                     }}
                     className="w-full flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50"
                   >
-                    <Activity className="h-4 w-4 mr-3" />
-                    Activity
+                    <BarChart3 className="h-4 w-4 mr-3" />
+                    Progress
                   </button>
                   <hr className="my-2 border-slate-200" />
                   <button

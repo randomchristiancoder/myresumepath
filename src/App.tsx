@@ -5,6 +5,9 @@ import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
+import OnboardingFlow from './components/OnboardingFlow'
+import HelpSystem from './components/HelpSystem'
+import AccessibilityFeatures from './components/AccessibilityFeatures'
 import AuthPage from './pages/AuthPage'
 import Dashboard from './pages/Dashboard'
 import UploadPage from './pages/UploadPage'
@@ -12,6 +15,7 @@ import AnalysisPage from './pages/AnalysisPage'
 import ReportsPage from './pages/ReportsPage'
 import ApiKeysPage from './pages/ApiKeysPage'
 import AdminPage from './pages/AdminPage'
+import ProgressTracker from './components/ProgressTracker'
 
 function App() {
   return (
@@ -27,6 +31,9 @@ function App() {
                   <Layout>
                     <Dashboard />
                   </Layout>
+                  <OnboardingFlow />
+                  <HelpSystem />
+                  <AccessibilityFeatures />
                 </ProtectedRoute>
               }
             />
@@ -37,6 +44,8 @@ function App() {
                   <Layout>
                     <UploadPage />
                   </Layout>
+                  <HelpSystem />
+                  <AccessibilityFeatures />
                 </ProtectedRoute>
               }
             />
@@ -47,6 +56,8 @@ function App() {
                   <Layout>
                     <AnalysisPage />
                   </Layout>
+                  <HelpSystem />
+                  <AccessibilityFeatures />
                 </ProtectedRoute>
               }
             />
@@ -57,6 +68,20 @@ function App() {
                   <Layout>
                     <ReportsPage />
                   </Layout>
+                  <HelpSystem />
+                  <AccessibilityFeatures />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/progress"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <ProgressTracker />
+                  </Layout>
+                  <HelpSystem />
+                  <AccessibilityFeatures />
                 </ProtectedRoute>
               }
             />
@@ -67,6 +92,8 @@ function App() {
                   <Layout>
                     <ApiKeysPage />
                   </Layout>
+                  <HelpSystem />
+                  <AccessibilityFeatures />
                 </ProtectedRoute>
               }
             />
@@ -77,6 +104,8 @@ function App() {
                   <Layout>
                     <AdminPage />
                   </Layout>
+                  <HelpSystem />
+                  <AccessibilityFeatures />
                 </AdminRoute>
               }
             />
