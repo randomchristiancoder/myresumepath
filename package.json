@@ -4,16 +4,12 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "concurrently \"npm run server\" \"npm run client\"",
-    "client": "vite",
-    "server": "cd server && npm start",
+    "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "setup-server": "cd server && npm install",
     "validate": "node test/validation-suite.js",
-    "test:system": "node test/validation-suite.js",
-    "ssl:generate": "cd server && node -e \"import('./ssl-config.js').then(m => m.generateSelfSignedCert())\""
+    "test:system": "node test/validation-suite.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.0",
