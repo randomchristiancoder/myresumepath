@@ -25,7 +25,8 @@ import {
   Share,
   Bookmark,
   ExternalLink,
-  MousePointer
+  MousePointer,
+  RefreshCw
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -94,6 +95,7 @@ const Dashboard: React.FC = () => {
   const [greeting, setGreeting] = useState('')
   const [clickingActivity, setClickingActivity] = useState<string | null>(null)
   const [careerInsights, setCareerInsights] = useState<CareerInsight[]>([])
+  const [refreshing, setRefreshing] = useState(false)
 
   useEffect(() => {
     fetchDashboardData()
@@ -111,6 +113,8 @@ const Dashboard: React.FC = () => {
     if (!user) return
 
     try {
+      setRefreshing(true)
+      
       // Fetch user statistics
       const [resumesResult, assessmentsResult, reportsResult] = await Promise.all([
         supabase.from('resumes').select('*', { count: 'exact' }).eq('user_id', user.id),
@@ -261,6 +265,7 @@ const Dashboard: React.FC = () => {
       console.error('Error fetching dashboard data:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -651,23 +656,35 @@ const Dashboard: React.FC = () => {
 
         {/* Enhanced Sidebar with Recent Activity and Career Insights */}
         <div className="space-y-6">
-          {/* Recent Activity Section - NOW VISIBLE IN MAIN CONTENT */}
+          {/* Recent Activity Section - PROMINENTLY DISPLAYED */}
           <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-semibold text-slate-900 flex items-center">
                 <Activity className="h-5 w-5 mr-2 text-green-600" />
                 Recent Activity
+                {recentActivity.length > 0 && (
+                  <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                    {recentActivity.length}
+                  </span>
+                )}
               </h3>
-              {recentActivity.length > 0 && (
-                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
-                  View All
+              <div className="flex items-center space-x-2">
+                {refreshing && (
+                  <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
+                )}
+                <button 
+                  onClick={fetchDashboardData}
+                  className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
+                  disabled={refreshing}
+                >
+                  Refresh
                 </button>
-              )}
+              </div>
             </div>
             
             {recentActivity.length > 0 ? (
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {recentActivity.slice(0, 5).map((activity, index) => {
+                {recentActivity.slice(0, 6).map((activity, index) => {
                   const isClickable = isActivityClickable(activity)
                   const isClicking = clickingActivity === activity.id
                   
@@ -687,7 +704,7 @@ const Dashboard: React.FC = () => {
                     >
                       {/* Loading indicator */}
                       {isClicking && (
-                        <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center">
+                        <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center z-10">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                         </div>
                       )}
@@ -739,17 +756,29 @@ const Dashboard: React.FC = () => {
             ) : (
               <div className="text-center py-8">
                 <Activity className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-500 text-sm">No recent activity</p>
+                <p className="text-slate-500 text-sm font-medium">No recent activity</p>
                 <p className="text-slate-400 text-xs mt-1">Upload a resume to get started</p>
+                <Link
+                  to="/upload"
+                  className="inline-flex items-center mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Resume
+                </Link>
               </div>
             )}
           </div>
 
-          {/* Career Insights Section - NOW VISIBLE IN MAIN CONTENT */}
+          {/* Career Insights Section - PROMINENTLY DISPLAYED */}
           <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-200">
             <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
               <Star className="h-5 w-5 mr-2 text-purple-600" />
               Career Insights
+              {careerInsights.length > 0 && (
+                <span className="ml-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                  {careerInsights.length}
+                </span>
+              )}
             </h3>
             {hasResumeData && latestResume ? (
               <div className="space-y-4">
@@ -764,7 +793,7 @@ const Dashboard: React.FC = () => {
                 {careerInsights.length > 0 && (
                   <div className="space-y-3">
                     {careerInsights.map((insight, index) => (
-                      <div key={index} className="p-4 bg-white rounded-xl border border-purple-200 shadow-sm">
+                      <div key={index} className="p-4 bg-white rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
                             <insight.icon className={`h-4 w-4 ${insight.color}`} />
