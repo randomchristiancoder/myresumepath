@@ -26,7 +26,11 @@ import {
   Bookmark,
   ExternalLink,
   MousePointer,
-  RefreshCw
+  RefreshCw,
+  Trophy,
+  Lightbulb,
+  Rocket,
+  Shield
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -477,17 +481,22 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="space-y-8">
-      {/* Enhanced Header */}
-      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-3xl p-8 text-white relative overflow-hidden">
+      {/* Skip Link for Accessibility */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
+      {/* Enhanced Header with Accessibility */}
+      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-3xl p-8 text-white relative overflow-hidden card-hover interactive" role="banner">
         <div className="absolute inset-0 bg-black/10"></div>
         <div className="relative z-10">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
             <div className="mb-6 lg:mb-0">
               <div className="flex items-center space-x-2 mb-2">
-                <Sparkles className="h-6 w-6 text-yellow-300" />
+                <Sparkles className="h-6 w-6 text-yellow-300" aria-hidden="true" />
                 <span className="text-blue-100 font-medium">{greeting}</span>
               </div>
-              <h1 className="text-4xl font-bold mb-3">
+              <h1 className="text-4xl font-bold mb-3" id="main-heading">
                 Welcome back, {user?.email?.split('@')[0]}!
               </h1>
               <p className="text-blue-100 text-lg max-w-2xl">
@@ -496,12 +505,16 @@ const Dashboard: React.FC = () => {
             </div>
             <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-6">
               <div className="text-center lg:text-right">
-                <div className="text-3xl font-bold">{stats.resumesUploaded + stats.skillsAnalyzed}</div>
+                <div className="text-3xl font-bold" aria-label={`${stats.resumesUploaded + stats.skillsAnalyzed} total actions completed`}>
+                  {stats.resumesUploaded + stats.skillsAnalyzed}
+                </div>
                 <div className="text-blue-200 text-sm">Total Actions</div>
               </div>
-              <div className="w-px h-12 bg-blue-400 hidden lg:block"></div>
+              <div className="w-px h-12 bg-blue-400 hidden lg:block" aria-hidden="true"></div>
               <div className="text-center lg:text-right">
-                <div className="text-3xl font-bold">{stats.reportsGenerated}</div>
+                <div className="text-3xl font-bold" aria-label={`${stats.reportsGenerated} reports generated`}>
+                  {stats.reportsGenerated}
+                </div>
                 <div className="text-blue-200 text-sm">Reports Generated</div>
               </div>
             </div>
@@ -509,40 +522,43 @@ const Dashboard: React.FC = () => {
         </div>
         
         {/* Decorative elements */}
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32" aria-hidden="true"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24" aria-hidden="true"></div>
       </div>
 
-      {/* Enhanced Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* Enhanced Stats Grid with Accessibility */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" role="region" aria-labelledby="stats-heading">
+        <h2 id="stats-heading" className="sr-only">Dashboard Statistics</h2>
         {statCards.map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+            className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group card-hover interactive"
+            role="article"
+            aria-labelledby={`stat-${index}-title`}
           >
             <div className="flex items-center justify-between mb-4">
               <div className={`p-3 rounded-xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300`}>
-                <stat.icon className={`h-6 w-6 ${stat.textColor}`} />
+                <stat.icon className={`h-6 w-6 ${stat.textColor}`} aria-hidden="true" />
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                <p className="text-3xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors" aria-label={`${stat.value} ${stat.title.toLowerCase()}`}>
                   {stat.value}
                 </p>
                 <div className="flex items-center text-xs text-green-600 font-medium">
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  {stat.change}
+                  <TrendingUp className="h-3 w-3 mr-1" aria-hidden="true" />
+                  <span aria-label={`Change: ${stat.change}`}>{stat.change}</span>
                 </div>
               </div>
             </div>
             <div>
-              <p className="text-slate-600 text-sm font-medium">{stat.title}</p>
+              <p id={`stat-${index}-title`} className="text-slate-600 text-sm font-medium">{stat.title}</p>
             </div>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Enhanced Quick Actions */}
+        {/* Enhanced Quick Actions with Accessibility */}
         <div className="lg:col-span-2 space-y-8">
           <div className="flex items-center justify-between">
             <div>
@@ -550,17 +566,18 @@ const Dashboard: React.FC = () => {
               <p className="text-slate-600 mt-1">Continue your career development journey</p>
             </div>
             <div className="flex items-center text-sm text-slate-500">
-              <Zap className="h-4 w-4 mr-1" />
-              AI-Powered
+              <Zap className="h-4 w-4 mr-1" aria-hidden="true" />
+              <span>AI-Powered</span>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" role="region" aria-labelledby="quick-actions-heading">
+            <h3 id="quick-actions-heading" className="sr-only">Quick Actions</h3>
             {quickActions.map((action, index) => (
               <div key={index} className="relative group">
                 <Link
                   to={action.href}
-                  className={`block bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${
+                  className={`block bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 card-hover interactive ${
                     !action.enabled ? 'opacity-60 cursor-not-allowed' : ''
                   }`}
                   onClick={(e) => {
@@ -568,10 +585,12 @@ const Dashboard: React.FC = () => {
                       e.preventDefault()
                     }
                   }}
+                  aria-describedby={`action-${index}-description`}
+                  aria-disabled={!action.enabled}
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${action.color} group-hover:scale-110 transition-transform duration-300`}>
-                      <action.icon className="h-6 w-6 text-white" />
+                      <action.icon className="h-6 w-6 text-white" aria-hidden="true" />
                     </div>
                     {action.badge && (
                       <span className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -586,11 +605,11 @@ const Dashboard: React.FC = () => {
                   <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
                     {action.title}
                   </h3>
-                  <p className="text-slate-600 text-sm mb-4 leading-relaxed">{action.description}</p>
+                  <p id={`action-${index}-description`} className="text-slate-600 text-sm mb-4 leading-relaxed">{action.description}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-blue-600 text-sm font-medium">
-                      {action.enabled ? 'Get started' : 'Upload resume first'}
-                      <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                      <span>{action.enabled ? 'Get started' : 'Upload resume first'}</span>
+                      <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" aria-hidden="true" />
                     </div>
                   </div>
                 </Link>
@@ -598,20 +617,20 @@ const Dashboard: React.FC = () => {
             ))}
           </div>
 
-          {/* Enhanced Progress Overview */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+          {/* Enhanced Progress Overview with Accessibility */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 card-hover" role="region" aria-labelledby="progress-heading">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center">
-                <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+              <h3 id="progress-heading" className="text-lg font-semibold text-slate-900 flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
                 Your Progress
               </h3>
-              <span className="text-sm font-bold text-slate-900">
+              <span className="text-sm font-bold text-slate-900" aria-label={`Progress: ${hasResumeData ? '75' : '25'} percent complete`}>
                 {hasResumeData ? '75%' : '25%'} Complete
               </span>
             </div>
             
             <div className="mb-6">
-              <div className="w-full bg-slate-200 rounded-full h-3">
+              <div className="w-full bg-slate-200 rounded-full h-3" role="progressbar" aria-valuenow={hasResumeData ? 75 : 25} aria-valuemin={0} aria-valuemax={100} aria-label="Overall progress">
                 <div 
                   className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
                   style={{ width: hasResumeData ? '75%' : '25%' }}
@@ -623,28 +642,28 @@ const Dashboard: React.FC = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50">
-                <CheckCircle className={`h-5 w-5 ${hasResumeData ? 'text-green-500' : 'text-slate-300'}`} />
+                <CheckCircle className={`h-5 w-5 ${hasResumeData ? 'text-green-500' : 'text-slate-300'}`} aria-hidden="true" />
                 <div>
                   <span className="text-sm font-medium text-slate-900">Resume Uploaded</span>
                   <p className="text-xs text-slate-600">AI analysis complete</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50">
-                <CheckCircle className={`h-5 w-5 ${stats.skillsAnalyzed > 0 ? 'text-green-500' : 'text-slate-300'}`} />
+                <CheckCircle className={`h-5 w-5 ${stats.skillsAnalyzed > 0 ? 'text-green-500' : 'text-slate-300'}`} aria-hidden="true" />
                 <div>
                   <span className="text-sm font-medium text-slate-900">Skills Analyzed</span>
                   <p className="text-xs text-slate-600">Career assessment</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50">
-                <CheckCircle className={`h-5 w-5 ${stats.reportsGenerated > 0 ? 'text-green-500' : 'text-slate-300'}`} />
+                <CheckCircle className={`h-5 w-5 ${stats.reportsGenerated > 0 ? 'text-green-500' : 'text-slate-300'}`} aria-hidden="true" />
                 <div>
                   <span className="text-sm font-medium text-slate-900">Report Generated</span>
                   <p className="text-xs text-slate-600">Career insights</p>
                 </div>
               </div>
               <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50">
-                <CheckCircle className="h-5 w-5 text-slate-300" />
+                <CheckCircle className="h-5 w-5 text-slate-300" aria-hidden="true" />
                 <div>
                   <span className="text-sm font-medium text-slate-900">Goals Set</span>
                   <p className="text-xs text-slate-600">Career planning</p>
@@ -654,28 +673,29 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Enhanced Sidebar with Recent Activity and Career Insights */}
+        {/* Enhanced Sidebar with Accessibility */}
         <div className="space-y-6">
-          {/* Recent Activity Section - PROMINENTLY DISPLAYED */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+          {/* Recent Activity Section with Enhanced Accessibility */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 card-hover" role="region" aria-labelledby="activity-heading">
             <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-semibold text-slate-900 flex items-center">
-                <Activity className="h-5 w-5 mr-2 text-green-600" />
+              <h3 id="activity-heading" className="text-lg font-semibold text-slate-900 flex items-center">
+                <Activity className="h-5 w-5 mr-2 text-green-600" aria-hidden="true" />
                 Recent Activity
                 {recentActivity.length > 0 && (
-                  <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full">
+                  <span className="ml-2 bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full" aria-label={`${recentActivity.length} recent activities`}>
                     {recentActivity.length}
                   </span>
                 )}
               </h3>
               <div className="flex items-center space-x-2">
                 {refreshing && (
-                  <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" />
+                  <RefreshCw className="h-4 w-4 text-blue-500 animate-spin" aria-hidden="true" />
                 )}
                 <button 
                   onClick={fetchDashboardData}
                   className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors"
                   disabled={refreshing}
+                  aria-label="Refresh activity data"
                 >
                   Refresh
                 </button>
@@ -683,7 +703,7 @@ const Dashboard: React.FC = () => {
             </div>
             
             {recentActivity.length > 0 ? (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-3 max-h-96 overflow-y-auto" role="list" aria-label="Recent activities">
                 {recentActivity.slice(0, 6).map((activity, index) => {
                   const isClickable = isActivityClickable(activity)
                   const isClicking = clickingActivity === activity.id
@@ -693,7 +713,7 @@ const Dashboard: React.FC = () => {
                       key={index} 
                       className={`relative flex items-start space-x-3 p-4 rounded-xl border transition-all duration-200 ${
                         isClickable
-                          ? `cursor-pointer ${getActivityColor(activity.type)} transform hover:scale-[1.02] active:scale-[0.98]` 
+                          ? `cursor-pointer ${getActivityColor(activity.type)} transform hover:scale-[1.02] active:scale-[0.98] interactive` 
                           : getActivityColor(activity.type)
                       } ${isClicking ? 'opacity-75 scale-95' : ''}`}
                       onClick={() => {
@@ -701,10 +721,21 @@ const Dashboard: React.FC = () => {
                           handleActivityClick(activity)
                         }
                       }}
+                      role={isClickable ? 'button' : 'listitem'}
+                      tabIndex={isClickable ? 0 : -1}
+                      onKeyDown={(e) => {
+                        if (isClickable && (e.key === 'Enter' || e.key === ' ')) {
+                          e.preventDefault()
+                          if (!isClicking) {
+                            handleActivityClick(activity)
+                          }
+                        }
+                      }}
+                      aria-label={isClickable ? `${activity.title}: ${activity.description}. Click to view details.` : `${activity.title}: ${activity.description}`}
                     >
                       {/* Loading indicator */}
                       {isClicking && (
-                        <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center z-10">
+                        <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center z-10" aria-hidden="true">
                           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                         </div>
                       )}
@@ -719,8 +750,8 @@ const Dashboard: React.FC = () => {
                           </p>
                           {isClickable && (
                             <div className="flex items-center space-x-1 ml-2">
-                              <MousePointer className="h-4 w-4 text-blue-500 hover:text-blue-600 transition-colors flex-shrink-0" />
-                              <ChevronRight className="h-4 w-4 text-blue-500 hover:text-blue-600 transition-colors flex-shrink-0" />
+                              <MousePointer className="h-4 w-4 text-blue-500 hover:text-blue-600 transition-colors flex-shrink-0" aria-hidden="true" />
+                              <ChevronRight className="h-4 w-4 text-blue-500 hover:text-blue-600 transition-colors flex-shrink-0" aria-hidden="true" />
                             </div>
                           )}
                         </div>
@@ -729,8 +760,10 @@ const Dashboard: React.FC = () => {
                         </p>
                         <div className="flex items-center justify-between mt-2">
                           <div className="flex items-center text-xs text-slate-500">
-                            <Clock className="h-3 w-3 mr-1" />
-                            {new Date(activity.created_at).toLocaleDateString()}
+                            <Clock className="h-3 w-3 mr-1" aria-hidden="true" />
+                            <time dateTime={activity.created_at}>
+                              {new Date(activity.created_at).toLocaleDateString()}
+                            </time>
                           </div>
                           {activity.metadata?.extractionQuality && (
                             <span className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -744,8 +777,8 @@ const Dashboard: React.FC = () => {
                         </div>
                         {isClickable && (
                           <div className="mt-2 text-xs text-blue-600 font-medium flex items-center">
-                            <Eye className="h-3 w-3 mr-1" />
-                            {getActivityActionText(activity)}
+                            <Eye className="h-3 w-3 mr-1" aria-hidden="true" />
+                            <span>{getActivityActionText(activity)}</span>
                           </div>
                         )}
                       </div>
@@ -755,27 +788,27 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <Activity className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                <Activity className="h-12 w-12 text-slate-300 mx-auto mb-3" aria-hidden="true" />
                 <p className="text-slate-500 text-sm font-medium">No recent activity</p>
                 <p className="text-slate-400 text-xs mt-1">Upload a resume to get started</p>
                 <Link
                   to="/upload"
-                  className="inline-flex items-center mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center mt-3 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors interactive"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
                   Upload Resume
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Career Insights Section - PROMINENTLY DISPLAYED */}
-          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-200">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-              <Star className="h-5 w-5 mr-2 text-purple-600" />
+          {/* Career Insights Section with Enhanced Accessibility */}
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-200 card-hover" role="region" aria-labelledby="insights-heading">
+            <h3 id="insights-heading" className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <Star className="h-5 w-5 mr-2 text-purple-600" aria-hidden="true" />
               Career Insights
               {careerInsights.length > 0 && (
-                <span className="ml-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full">
+                <span className="ml-2 bg-purple-100 text-purple-800 text-xs px-2 py-1 rounded-full" aria-label={`${careerInsights.length} insights available`}>
                   {careerInsights.length}
                 </span>
               )}
@@ -786,17 +819,17 @@ const Dashboard: React.FC = () => {
                   <p className="text-sm font-medium text-purple-900 mb-1">Latest Resume</p>
                   <p className="text-purple-800 font-semibold">{latestResume.filename}</p>
                   <p className="text-xs text-purple-600 mt-1">
-                    Uploaded {new Date(latestResume.created_at).toLocaleDateString()}
+                    Uploaded <time dateTime={latestResume.created_at}>{new Date(latestResume.created_at).toLocaleDateString()}</time>
                   </p>
                 </div>
                 
                 {careerInsights.length > 0 && (
-                  <div className="space-y-3">
+                  <div className="space-y-3" role="list" aria-label="Career insights">
                     {careerInsights.map((insight, index) => (
-                      <div key={index} className="p-4 bg-white rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div key={index} className="p-4 bg-white rounded-xl border border-purple-200 shadow-sm hover:shadow-md transition-shadow interactive" role="listitem">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center space-x-2">
-                            <insight.icon className={`h-4 w-4 ${insight.color}`} />
+                            <insight.icon className={`h-4 w-4 ${insight.color}`} aria-hidden="true" />
                             <p className="text-sm font-medium text-purple-900">{insight.title}</p>
                           </div>
                           <p className={`text-sm font-semibold ${insight.color}`}>{insight.value}</p>
@@ -809,13 +842,13 @@ const Dashboard: React.FC = () => {
                 <div className="flex space-x-2">
                   <button 
                     onClick={() => navigate('/analysis')}
-                    className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                    className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors interactive"
                   >
                     Start Analysis
                   </button>
                   <button 
                     onClick={() => navigate('/reports')}
-                    className="flex-1 px-3 py-2 border border-purple-300 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors"
+                    className="flex-1 px-3 py-2 border border-purple-300 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors interactive"
                   >
                     View Reports
                   </button>
@@ -823,30 +856,32 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-6">
-                <Brain className="h-12 w-12 text-purple-400 mx-auto mb-3" />
+                <Brain className="h-12 w-12 text-purple-400 mx-auto mb-3" aria-hidden="true" />
                 <p className="text-purple-700 text-sm font-medium mb-2">Get Personalized Insights</p>
                 <p className="text-purple-600 text-xs mb-4">Upload your resume to unlock AI-powered career insights</p>
                 <Link
                   to="/upload"
-                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors interactive"
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 mr-2" aria-hidden="true" />
                   Upload Resume
                 </Link>
               </div>
             )}
           </div>
 
-          {/* Quick Stats */}
-          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+          {/* Quick Stats with Enhanced Accessibility */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 card-hover" role="region" aria-labelledby="quick-stats-heading">
+            <h3 id="quick-stats-heading" className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2 text-blue-600" aria-hidden="true" />
               Quick Stats
             </h3>
             <div className="space-y-3">
               <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
                 <span className="text-sm font-medium text-blue-900">Profile Completion</span>
-                <span className="text-sm font-bold text-blue-900">{hasResumeData ? '75%' : '25%'}</span>
+                <span className="text-sm font-bold text-blue-900" aria-label={`Profile ${hasResumeData ? '75' : '25'} percent complete`}>
+                  {hasResumeData ? '75%' : '25%'}
+                </span>
               </div>
               <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                 <span className="text-sm font-medium text-green-900">Career Readiness</span>
@@ -860,6 +895,9 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Main content landmark */}
+      <div id="main-content" className="sr-only">Main dashboard content loaded</div>
     </div>
   )
 }
