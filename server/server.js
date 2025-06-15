@@ -311,11 +311,13 @@ function parseResumeContent(text, filename) {
 app.get('/api/health', (req, res) => {
   res.json({ 
     status: 'OK', 
-    message: 'Server is running',
+    message: 'Express Server is running',
     timestamp: new Date().toISOString(),
-    ssl: req.secure || req.headers['x-forwarded-proto'] === 'https',
+    ssl: false,
     uptime: process.uptime(),
-    memory: process.memoryUsage()
+    memory: process.memoryUsage(),
+    framework: 'Express.js',
+    version: '1.0.0'
   });
 });
 
@@ -421,15 +423,16 @@ app.get('/api/validate/system', (req, res) => {
         status: 'operational',
         uptime: process.uptime(),
         memory: process.memoryUsage(),
-        version: process.version
+        version: process.version,
+        framework: 'Express.js'
       },
       database: {
         status: 'operational',
         connection: true
       },
       ssl: {
-        enabled: req.secure || req.headers['x-forwarded-proto'] === 'https',
-        certificate: req.secure ? 'Valid' : 'Not configured'
+        enabled: false,
+        certificate: 'HTTP only'
       },
       endpoints: {
         health: { status: 'operational', method: 'GET' },
@@ -474,9 +477,11 @@ app.use('*', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-  console.log(`✅ HTTP Server running on port ${PORT}`);
+  console.log(`✅ Express HTTP Server running on port ${PORT}`);
   console.log(`📡 Health check: http://localhost:${PORT}/api/health`);
   console.log(`📄 Resume upload: http://localhost:${PORT}/api/upload-resume`);
+  console.log(`🔧 System validation: http://localhost:${PORT}/api/validate/system`);
+  console.log(`📋 Framework: Express.js (CommonJS)`);
 });
 
 module.exports = app;
