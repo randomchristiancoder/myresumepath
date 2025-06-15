@@ -23,7 +23,8 @@ import {
   Plus,
   Download,
   Share,
-  Bookmark
+  Bookmark,
+  ExternalLink
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -246,6 +247,24 @@ const Dashboard: React.FC = () => {
     }
   }
 
+  const handleActivityClick = (activity: RecentActivity) => {
+    switch (activity.type) {
+      case 'resume_upload':
+        if (activity.metadata?.resumeId || activity.metadata?.resumeData) {
+          handleViewResumeDetails(activity)
+        }
+        break
+      case 'assessment_completed':
+        navigate('/analysis')
+        break
+      case 'report_generated':
+        navigate('/reports')
+        break
+      default:
+        break
+    }
+  }
+
   const statCards = [
     {
       title: 'Resumes Analyzed',
@@ -343,6 +362,25 @@ const Dashboard: React.FC = () => {
       case 'assessment_completed': return 'border-purple-200 hover:border-purple-300 hover:bg-purple-50 hover:shadow-lg'
       case 'report_generated': return 'border-green-200 hover:border-green-300 hover:bg-green-50 hover:shadow-lg'
       default: return 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+    }
+  }
+
+  const isActivityClickable = (activity: RecentActivity) => {
+    return activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData) ||
+           activity.type === 'assessment_completed' ||
+           activity.type === 'report_generated'
+  }
+
+  const getActivityActionText = (activity: RecentActivity) => {
+    switch (activity.type) {
+      case 'resume_upload':
+        return activity.metadata?.resumeId || activity.metadata?.resumeData ? 'Click to view details' : ''
+      case 'assessment_completed':
+        return 'Click to view analysis'
+      case 'report_generated':
+        return 'Click to view reports'
+      default:
+        return ''
     }
   }
 
@@ -558,13 +596,13 @@ const Dashboard: React.FC = () => {
                   <div 
                     key={index} 
                     className={`flex items-start space-x-3 p-3 rounded-xl border transition-all duration-200 ${
-                      activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData)
-                        ? `cursor-pointer ${getActivityColor(activity.type)}` 
+                      isActivityClickable(activity)
+                        ? `cursor-pointer ${getActivityColor(activity.type)} transform hover:scale-[1.02]` 
                         : getActivityColor(activity.type)
                     }`}
                     onClick={() => {
-                      if (activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData)) {
-                        handleViewResumeDetails(activity)
+                      if (isActivityClickable(activity)) {
+                        handleActivityClick(activity)
                       }
                     }}
                   >
@@ -576,8 +614,11 @@ const Dashboard: React.FC = () => {
                         <p className="text-sm font-medium text-slate-900 truncate">
                           {activity.title}
                         </p>
-                        {activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData) && (
-                          <Eye className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0" />
+                        {isActivityClickable(activity) && (
+                          <div className="flex items-center space-x-1">
+                            <Eye className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0" />
+                            <ChevronRight className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0" />
+                          </div>
                         )}
                       </div>
                       <p className="text-sm text-slate-600 truncate">
@@ -598,11 +639,10 @@ const Dashboard: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      {activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData) && (
+                      {isActivityClickable(activity) && (
                         <div className="mt-2 text-xs text-blue-600 font-medium flex items-center">
-                          <Eye className="h-3 w-3 mr-1" />
-                          Click to view details
-                          <ChevronRight className="h-3 w-3 ml-1" />
+                          <ExternalLink className="h-3 w-3 mr-1" />
+                          {getActivityActionText(activity)}
                         </div>
                       )}
                     </div>
