@@ -161,7 +161,7 @@ const Dashboard: React.FC = () => {
       if (assessmentsResult.data) {
         assessmentsResult.data
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 3)
+          .slice(0, 2)
           .forEach(assessment => {
             activities.push({
               id: assessment.id,
@@ -178,7 +178,7 @@ const Dashboard: React.FC = () => {
       if (reportsResult.data) {
         reportsResult.data
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-          .slice(0, 3)
+          .slice(0, 2)
           .forEach(report => {
             activities.push({
               id: report.id,
