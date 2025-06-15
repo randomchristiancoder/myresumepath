@@ -1,226 +1,218 @@
-# My Resume Path - Full-Stack Career Development Platform
+# My Resume Path - AI-Powered Career Development Platform
 
-A comprehensive AI-powered career development platform that helps users analyze their resumes, identify skill gaps, and receive personalized career recommendations.
+A comprehensive, production-ready career development platform that leverages AI to analyze resumes, identify skill gaps, and provide personalized career recommendations.
 
 ## 🚀 Features
 
 ### Core Functionality
-- **Resume Upload & Analysis**: Support for PDF, DOCX, and TXT files with comprehensive data extraction
-- **AI-Powered Parsing**: Advanced resume parsing using multiple AI providers (OpenAI, Anthropic, Google AI, Perplexity)
-- **Skill Gap Analysis**: Identify missing skills and get targeted recommendations
-- **Career Matching**: Find relevant job opportunities based on skills and experience
-- **Personality Assessment**: Career personality analysis with Big Five and Holland Code frameworks
+- **AI-Powered Resume Analysis**: Advanced parsing with comprehensive data extraction
+- **Career Assessment**: Personality and skills evaluation with Big Five framework
+- **Skill Gap Analysis**: Identify missing skills with targeted recommendations
+- **Job Matching**: Find relevant opportunities based on skills and experience
 - **Course Recommendations**: Personalized learning paths to bridge skill gaps
 - **Comprehensive Reports**: Generate detailed PDF reports with career insights
+- **Real-time Dashboard**: Track progress with interactive analytics
 
-### AI Integration
-- **Multi-Provider Support**: OpenAI, OpenRouter, Anthropic, Perplexity, Google AI, Cohere, Hugging Face, Replicate
-- **Granular Control**: Enable/disable AI features per provider to optimize costs
-- **Real-time Analysis**: Live job market data and course recommendations via Perplexity
-- **Fallback Systems**: Robust parsing even without AI API keys
+### Technical Excellence
+- **Modern React Architecture**: Built with React 18, TypeScript, and Tailwind CSS
+- **Robust Backend**: Express.js server with comprehensive file processing
+- **Database Integration**: Supabase with Row Level Security (RLS)
+- **Error Handling**: Comprehensive error boundaries and validation
+- **Performance Optimized**: Lazy loading, debouncing, and efficient state management
+- **Mobile Responsive**: Fully responsive design with mobile-first approach
 
 ### Security & Performance
-- **HTTPS Support**: SSL/TLS encryption with automatic certificate detection
-- **Row Level Security**: Supabase RLS ensures users only access their own data
-- **API Key Management**: Secure storage and granular usage controls
-- **Comprehensive Validation**: Built-in system validation and testing suite
+- **Authentication**: Secure user authentication with Supabase Auth
+- **Data Protection**: Row Level Security ensures users only access their own data
+- **File Validation**: Comprehensive file type and size validation
+- **Error Boundaries**: Graceful error handling throughout the application
+- **Performance Monitoring**: Built-in validation and testing suite
 
 ## 🛠️ Technology Stack
 
 ### Frontend
-- **React 18** with TypeScript
-- **Tailwind CSS** for styling
-- **Lucide React** for icons
-- **React Router** for navigation
-- **React Dropzone** for file uploads
+- **React 18** with TypeScript for type safety
+- **Tailwind CSS** for modern, responsive styling
+- **Lucide React** for consistent iconography
+- **React Router** for client-side routing
+- **React Dropzone** for intuitive file uploads
 - **jsPDF** for report generation
 
 ### Backend
-- **Node.js** with Express
-- **Supabase** for database and authentication
-- **Multer** for file handling
+- **Express.js** with CommonJS for server-side logic
+- **Multer** for secure file handling
 - **PDF-Parse** and **Mammoth** for document processing
-- **Axios** for API integrations
+- **CORS** for cross-origin resource sharing
 
-### Database
-- **PostgreSQL** via Supabase
-- **Row Level Security** enabled
-- **Comprehensive schema** for users, resumes, assessments, reports, and API keys
+### Database & Authentication
+- **Supabase** for database and authentication
+- **PostgreSQL** with Row Level Security
+- **Real-time subscriptions** for live updates
+
+### Development Tools
+- **TypeScript** for type safety
+- **ESLint** for code quality
+- **Vite** for fast development and building
+- **Concurrently** for running multiple processes
 
 ## 📋 Prerequisites
 
-- Node.js 18+ 
-- npm or yarn
-- Supabase account
-- AI API keys (optional but recommended)
+- **Node.js** 18+ 
+- **npm** or **yarn**
+- **Supabase** account
+- Modern web browser
 
-## 🔧 Installation
+## 🔧 Installation & Setup
 
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd my-resume-path
-   ```
+### 1. Clone the Repository
+```bash
+git clone <repository-url>
+cd my-resume-path
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   npm run setup-server
-   ```
+### 2. Install Dependencies
+```bash
+# Install frontend dependencies
+npm install
 
-3. **Environment Configuration**
-   ```bash
-   cp .env.example .env
-   ```
-   
-   Update `.env` with your Supabase credentials:
-   ```env
-   VITE_SUPABASE_URL=your_supabase_url
-   VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
-   PORT=3001
-   ```
+# Install backend dependencies
+cd server && npm install && cd ..
+```
 
-4. **Database Setup**
-   - Run the migration files in `supabase/migrations/` to set up the database schema
-   - The schema includes tables for users, resumes, assessments, reports, and API keys
-   - Row Level Security is automatically enabled
+### 3. Environment Configuration
+```bash
+# Copy environment template
+cp .env.example .env
+```
 
-5. **SSL Configuration (Optional)**
-   ```bash
-   # Generate self-signed certificate for development
-   npm run ssl:generate
-   
-   # Or add your own certificates to server/ssl/
-   # - cert.pem (certificate)
-   # - key.pem (private key)
-   ```
+Update `.env` with your Supabase credentials:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+PORT=3001
+```
+
+### 4. Database Setup
+1. Create a new Supabase project
+2. Run the migration files in `supabase/migrations/` in order
+3. The schema includes tables for users, resumes, assessments, reports, and API keys
+4. Row Level Security is automatically enabled
+
+### 5. Admin Account Setup (Optional)
+Follow the instructions in `ADMIN_SETUP_INSTRUCTIONS.md` to create an admin test account with sample data.
 
 ## 🚀 Running the Application
 
 ### Development Mode
 ```bash
+# Start both frontend and backend
 npm run dev
 ```
-This starts both the frontend (port 5173) and backend (port 3001) concurrently.
 
-### Production Mode
+This starts:
+- Frontend on `http://localhost:5173`
+- Backend on `http://localhost:3001`
+
+### Production Build
 ```bash
 npm run build
 npm run preview
 ```
 
-### Server Only
+### Individual Services
 ```bash
+# Frontend only
+npm run client
+
+# Backend only
 npm run server
 ```
 
-## 🔐 SSL/HTTPS Configuration
-
-The server automatically detects and uses SSL certificates:
-
-1. **Automatic Detection**: Checks for certificates in `server/ssl/`
-2. **Self-Signed Generation**: Automatically generates development certificates if OpenSSL is available
-3. **Fallback to HTTP**: Gracefully falls back to HTTP if SSL is not configured
-
-### Adding SSL Certificates
-
-1. Create `server/ssl/` directory
-2. Add your certificate files:
-   - `cert.pem` - SSL certificate
-   - `key.pem` - Private key
-3. Restart the server
-
 ## 🧪 Testing & Validation
 
-### Run Comprehensive Validation Suite
+### Run Comprehensive Test Suite
 ```bash
 npm run validate
 ```
 
 The validation suite tests:
-- **System Health**: Server status, database connectivity, SSL configuration
+- **System Health**: Server status, database connectivity
 - **Core Functionality**: File upload, resume parsing, report generation
-- **AI Integration**: Job matching, course recommendations, personality analysis
-- **Security**: CORS configuration, SSL setup
+- **Security**: CORS configuration, data validation
 - **Performance**: Response times and system metrics
-- **Data Validation**: Resume parsing accuracy and data integrity
 
 ### Manual Testing
 ```bash
-# Test specific endpoints
-curl https://localhost:3001/api/health
-curl https://localhost:3001/api/validate/system
+# Test server health
+curl http://localhost:3001/api/health
+
+# Test system validation
+curl http://localhost:3001/api/validate/system
 ```
-
-## 🔑 API Key Management
-
-### Supported Providers
-- **OpenAI**: GPT-4, GPT-3.5 for advanced text analysis
-- **OpenRouter**: Access to multiple AI models through single API
-- **Anthropic**: Claude models for sophisticated reasoning
-- **Perplexity**: Real-time web search and analysis
-- **Google AI**: Gemini and PaLM models
-- **Cohere**: Enterprise-grade language models
-- **Hugging Face**: Open-source model access
-- **Replicate**: Cloud-based ML model execution
-
-### Configuration
-1. Navigate to API Keys page in the application
-2. Add your API keys for desired providers
-3. Configure which features each provider should handle
-4. Enable/disable providers as needed to optimize costs
-
-### Feature Mapping
-- **Resume Parsing**: OpenAI, Anthropic, Google AI
-- **Job Matching**: Perplexity, OpenAI
-- **Course Recommendations**: Perplexity, OpenAI
-- **Personality Analysis**: OpenAI, Anthropic
-- **Skill Gap Analysis**: All providers
-- **Report Generation**: All providers
 
 ## 📊 Database Schema
 
 ### Core Tables
-- **users**: User authentication and profiles
-- **resumes**: Uploaded resume files and parsed data
-- **assessments**: Personality and skill assessments
-- **reports**: Generated career reports
-- **api_keys**: User API key management with usage controls
+- **`resumes`**: Uploaded resume files and parsed data
+- **`assessments`**: Personality and skill assessments
+- **`reports`**: Generated career reports
+- **`api_keys`**: User API key management (for future AI integration)
+- **`user_roles`**: Role-based access control
 
 ### Security Features
-- Row Level Security (RLS) on all tables
-- User-specific data access policies
-- Encrypted API key storage
-- Audit trails for data access
+- **Row Level Security (RLS)** on all tables
+- **User-specific data access** policies
+- **Audit trails** for data access
+- **Encrypted sensitive data**
 
-## 🔍 System Validation Results
+## 🎨 Design System
 
-The application includes comprehensive validation covering:
+### Color Palette
+- **Primary**: Blue gradient (`from-blue-600 to-purple-600`)
+- **Secondary**: Purple gradient (`from-purple-500 to-pink-500`)
+- **Success**: Green (`text-green-600`)
+- **Warning**: Yellow (`text-yellow-600`)
+- **Error**: Red (`text-red-600`)
 
-### ✅ System Health
-- Server uptime and memory usage
-- Database connectivity
-- SSL certificate validation
-- Endpoint availability
+### Typography
+- **Headings**: Bold, hierarchical sizing
+- **Body**: Readable, accessible contrast
+- **Code**: Monospace for technical content
 
-### ✅ Core Features
-- File upload and parsing
-- Resume data extraction
-- Skill categorization
-- Experience analysis
-- Education parsing
+### Components
+- **Consistent spacing**: 8px grid system
+- **Rounded corners**: Modern, friendly appearance
+- **Shadows**: Subtle depth and elevation
+- **Animations**: Smooth, purposeful transitions
 
-### ✅ AI Integration
-- Multi-provider API support
-- Fallback mechanisms
-- Cost optimization controls
-- Real-time data access
+## 🔧 Architecture
 
-### ✅ Security
-- HTTPS enforcement
-- CORS configuration
-- Data encryption
-- Access controls
+### Frontend Architecture
+```
+src/
+├── components/          # Reusable UI components
+├── contexts/           # React contexts (Auth, etc.)
+├── hooks/              # Custom React hooks
+├── pages/              # Page components
+├── utils/              # Utility functions
+└── lib/                # External library configurations
+```
+
+### Backend Architecture
+```
+server/
+├── routes/             # API route handlers
+├── middleware/         # Express middleware
+├── config/             # Configuration files
+└── uploads/            # Temporary file storage
+```
+
+### Key Features
+- **Component-based architecture** for reusability
+- **Custom hooks** for state management
+- **Utility functions** for common operations
+- **Error boundaries** for graceful error handling
+- **TypeScript** for type safety throughout
 
 ## 🚀 Deployment
 
@@ -232,41 +224,101 @@ VITE_SUPABASE_ANON_KEY=your_production_anon_key
 PORT=3001
 ```
 
-### SSL in Production
-- Use valid SSL certificates from a trusted CA
-- Configure your reverse proxy (nginx, Apache) for SSL termination
-- Or place certificates in `server/ssl/` directory
+### Build Process
+```bash
+# Build frontend
+npm run build
+
+# Start production server
+npm start
+```
 
 ### Database Migration
-- Run all migration files in order
-- Verify RLS policies are active
-- Test with sample data
+1. Run all migration files in order
+2. Verify RLS policies are active
+3. Test with sample data
 
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create a feature branch
-3. Run the validation suite: `npm run validate`
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Run the validation suite (`npm run validate`)
 4. Ensure all tests pass
-5. Submit a pull request
+5. Commit your changes (`git commit -m 'Add amazing feature'`)
+6. Push to the branch (`git push origin feature/amazing-feature`)
+7. Open a Pull Request
+
+### Development Guidelines
+- Follow TypeScript best practices
+- Use Tailwind CSS for styling
+- Write comprehensive tests
+- Maintain consistent code formatting
+- Document new features
 
 ## 📝 License
 
-This project is licensed under the MIT License.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🆘 Support
 
-For issues and questions:
-1. Check the validation report for system status
-2. Review the console logs for detailed error information
-3. Ensure all environment variables are properly configured
-4. Verify database migrations have been applied
+### Troubleshooting
+1. **Server Connection Issues**: Ensure backend is running on port 3001
+2. **Database Errors**: Verify Supabase credentials and RLS policies
+3. **File Upload Problems**: Check file size limits and supported formats
+4. **Authentication Issues**: Confirm Supabase Auth configuration
+
+### Getting Help
+- Check the validation report for system status
+- Review console logs for detailed error information
+- Ensure all environment variables are properly configured
+- Verify database migrations have been applied
 
 ## 🔄 Version History
 
+### v2.0.0 (Current)
+- **Complete application refactor** with improved architecture
+- **Enhanced UI/UX** with modern design system
+- **Improved error handling** and validation
+- **Better performance** with optimized components
+- **Enhanced security** with comprehensive validation
+- **Mobile-responsive design** with improved accessibility
+
 ### v1.0.0
-- Initial release with comprehensive resume analysis
-- Multi-provider AI integration
-- SSL/HTTPS support
-- Complete validation suite
-- Production-ready security features
+- Initial release with basic resume analysis
+- Supabase integration
+- File upload and parsing
+- Basic reporting functionality
+
+## 🌟 Key Improvements in v2.0
+
+### Architecture Enhancements
+- **Modular component structure** for better maintainability
+- **Custom hooks** for reusable logic
+- **Utility functions** for common operations
+- **Error boundaries** for graceful error handling
+- **TypeScript throughout** for type safety
+
+### User Experience
+- **Enhanced dashboard** with real-time insights
+- **Improved navigation** with mobile-responsive sidebar
+- **Better loading states** and error messages
+- **Intuitive file upload** with drag-and-drop
+- **Comprehensive validation** with helpful feedback
+
+### Performance
+- **Optimized rendering** with React best practices
+- **Efficient state management** with proper hooks
+- **Lazy loading** for better initial load times
+- **Debounced inputs** for better performance
+- **Cached data** for improved user experience
+
+### Security
+- **Enhanced validation** for all user inputs
+- **Secure file handling** with type checking
+- **Proper error handling** without information leakage
+- **Row Level Security** for data protection
+- **Authentication improvements** with better error messages
+
+---
+
+**My Resume Path** - Empowering careers through AI-powered insights and comprehensive analysis.

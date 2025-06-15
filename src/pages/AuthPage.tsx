@@ -1,25 +1,60 @@
 import React, { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../contexts/AuthContext'
-import { BrainCircuit, Mail, Lock, User, Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { BrainCircuit, Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react'
+import { validateEmail, validatePassword } from '../utils/validation'
 
 const AuthPage: React.FC = () => {
   const { user, signIn, signUp } = useAuth()
   const [isSignUp, setIsSignUp] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [success, setSuccess] = useState('')
   const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   if (user) {
     return <Navigate to="/dashboard" replace />
   }
 
+  const validateForm = () => {
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address')
+      return false
+    }
+
+    if (isSignUp) {
+      const passwordValidation = validatePassword(password)
+      if (!passwordValidation.isValid) {
+        setError(passwordValidation.errors[0])
+        return false
+      }
+
+      if (password !== confirmPassword) {
+        setError('Passwords do not match')
+        return false
+      }
+    } else {
+      if (password.length < 6) {
+        setError('Password must be at least 6 characters')
+        return false
+      }
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setLoading(true)
     setError('')
+    setSuccess('')
+
+    if (!validateForm()) return
+
+    setLoading(true)
 
     try {
       const { error } = isSignUp 
@@ -38,9 +73,16 @@ const AuthPage: React.FC = () => {
           setError('Please check your email and click the confirmation link before signing in.')
         } else if (error.message.includes('User already registered')) {
           setError('An account with this email already exists. Try signing in instead.')
+        } else if (error.message.includes('Signup disabled')) {
+          setError('New registrations are currently disabled. Please contact support.')
         } else {
           setError(error.message)
         }
+      } else if (isSignUp) {
+        setSuccess('Account created successfully! Please check your email for verification.')
+        setIsSignUp(false)
+        setPassword('')
+        setConfirmPassword('')
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.')
@@ -52,19 +94,43 @@ const AuthPage: React.FC = () => {
   const fillAdminCredentials = () => {
     setEmail('admin@myresumepath.com')
     setPassword('AdminPass123!')
+    setError('')
+    setSuccess('')
   }
+
+  const getPasswordStrength = (password: string) => {
+    const validation = validatePassword(password)
+    if (password.length === 0) return { strength: 0, label: '', color: '' }
+    
+    const score = validation.errors.length
+    if (score === 0) return { strength: 100, label: 'Strong', color: 'text-green-600' }
+    if (score <= 2) return { strength: 60, label: 'Medium', color: 'text-yellow-600' }
+    return { strength: 30, label: 'Weak', color: 'text-red-600' }
+  }
+
+  const passwordStrength = getPasswordStrength(password)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full space-y-8">
         {/* Header */}
         <div className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="flex items-center space-x-2 p-3 bg-white rounded-2xl shadow-lg">
-              <BrainCircuit className="h-10 w-10 text-blue-600" />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                My Resume Path
-              </span>
+          <div className="flex justify-center mb-6">
+            <div className="relative">
+              <div className="flex items-center space-x-3 p-4 bg-white rounded-2xl shadow-xl border border-slate-200">
+                <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl">
+                  <BrainCircuit className="h-8 w-8 text-white" />
+                </div>
+                <div className="text-left">
+                  <span className="text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                    My Resume Path
+                  </span>
+                  <p className="text-xs text-slate-600">AI-Powered Career Platform</p>
+                </div>
+              </div>
+              <div className="absolute -top-2 -right-2">
+                <Sparkles className="h-6 w-6 text-yellow-500" />
+              </div>
             </div>
           </div>
           <h2 className="text-3xl font-bold text-slate-900">
@@ -72,28 +138,28 @@ const AuthPage: React.FC = () => {
           </h2>
           <p className="mt-2 text-slate-600">
             {isSignUp 
-              ? 'Start your journey to career success' 
-              : 'Sign in to continue your career journey'
+              ? 'Start your journey to career success with AI-powered insights' 
+              : 'Sign in to continue your career development journey'
             }
           </p>
         </div>
 
         {/* Admin Test Account Helper */}
         {!isSignUp && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-xl p-4">
             <div className="flex items-start space-x-3">
               <AlertCircle className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
               <div className="flex-1">
-                <h3 className="text-sm font-medium text-blue-900">Testing with Admin Account</h3>
+                <h3 className="text-sm font-medium text-blue-900">Demo Account Available</h3>
                 <p className="text-sm text-blue-700 mt-1">
-                  Use the admin test credentials to explore all features.
+                  Try the platform with pre-loaded sample data and full admin access.
                 </p>
                 <button
                   type="button"
                   onClick={fillAdminCredentials}
-                  className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 underline"
+                  className="mt-2 text-sm font-medium text-blue-600 hover:text-blue-500 underline transition-colors"
                 >
-                  Fill admin credentials
+                  Use demo credentials →
                 </button>
               </div>
             </div>
@@ -108,6 +174,15 @@ const AuthPage: React.FC = () => {
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <div>{error}</div>
+                </div>
+              </div>
+            )}
+
+            {success && (
+              <div className="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg text-sm">
+                <div className="flex items-start space-x-2">
+                  <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                  <div>{success}</div>
                 </div>
               </div>
             )}
@@ -128,7 +203,7 @@ const AuthPage: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="block w-full pl-10 pr-3 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
                   placeholder="Enter your email"
                 />
               </div>
@@ -150,13 +225,13 @@ const AuthPage: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="block w-full pl-10 pr-10 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+                  className="block w-full pl-10 pr-10 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
                   placeholder="Enter your password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-slate-600 transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="h-5 w-5 text-slate-400" />
@@ -165,12 +240,66 @@ const AuthPage: React.FC = () => {
                   )}
                 </button>
               </div>
+              
+              {/* Password strength indicator for sign up */}
+              {isSignUp && password.length > 0 && (
+                <div className="mt-2">
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-slate-600">Password strength</span>
+                    <span className={passwordStrength.color}>{passwordStrength.label}</span>
+                  </div>
+                  <div className="w-full bg-slate-200 rounded-full h-1">
+                    <div 
+                      className={`h-1 rounded-full transition-all duration-300 ${
+                        passwordStrength.strength >= 60 ? 'bg-green-500' : 
+                        passwordStrength.strength >= 30 ? 'bg-yellow-500' : 'bg-red-500'
+                      }`}
+                      style={{ width: `${passwordStrength.strength}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
             </div>
+
+            {isSignUp && (
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-700 mb-2">
+                  Confirm Password
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-slate-400" />
+                  </div>
+                  <input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="block w-full pl-10 pr-10 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 placeholder-slate-400"
+                    placeholder="Confirm your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-slate-600 transition-colors"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-5 w-5 text-slate-400" />
+                    ) : (
+                      <Eye className="h-5 w-5 text-slate-400" />
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+              className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-lg shadow-lg text-sm font-medium text-white bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
@@ -182,7 +311,10 @@ const AuthPage: React.FC = () => {
                       Create Account
                     </>
                   ) : (
-                    'Sign In'
+                    <>
+                      <BrainCircuit className="h-5 w-5 mr-2" />
+                      Sign In
+                    </>
                   )}
                 </>
               )}
@@ -191,7 +323,13 @@ const AuthPage: React.FC = () => {
 
           <div className="mt-6 text-center">
             <button
-              onClick={() => setIsSignUp(!isSignUp)}
+              onClick={() => {
+                setIsSignUp(!isSignUp)
+                setError('')
+                setSuccess('')
+                setPassword('')
+                setConfirmPassword('')
+              }}
               className="text-blue-600 hover:text-blue-500 text-sm font-medium transition-colors"
             >
               {isSignUp 
@@ -199,6 +337,31 @@ const AuthPage: React.FC = () => {
                 : "Don't have an account? Sign up"
               }
             </button>
+          </div>
+        </div>
+
+        {/* Features preview */}
+        <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+          <h3 className="text-lg font-semibold text-slate-900 mb-4 text-center">
+            What you'll get access to:
+          </h3>
+          <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="flex items-center space-x-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="text-slate-700">AI Resume Analysis</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="text-slate-700">Career Matching</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="text-slate-700">Skill Gap Analysis</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <CheckCircle2 className="h-4 w-4 text-green-500" />
+              <span className="text-slate-700">Course Recommendations</span>
+            </div>
           </div>
         </div>
       </div>

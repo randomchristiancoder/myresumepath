@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import { User } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
@@ -8,6 +8,7 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<any>
   signIn: (email: string, password: string) => Promise<any>
   signOut: () => Promise<void>
+  refreshUser: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -24,18 +25,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    } catch (error) {
+      console.error('Error refreshing user:', error)
+      setUser(null)
+    }
+  }, [])
+
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    const getInitialSession = async () => {
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+        if (error) {
+          console.error('Error getting session:', error)
+        }
+        setUser(session?.user ?? null)
+      } catch (error) {
+        console.error('Error in getInitialSession:', error)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    getInitialSession()
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
+      async (event, session) => {
+        console.log('Auth state changed:', event, session?.user?.email)
         setUser(session?.user ?? null)
         setLoading(false)
+
+        // Handle specific auth events
+        if (event === 'SIGNED_OUT') {
+          // Clear any cached data
+          localStorage.removeItem('resumeAnalysis')
+          localStorage.removeItem('viewResumeData')
+        }
       }
     )
 
@@ -43,24 +74,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const signUp = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-    return { data, error }
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`
+        }
+      })
+      return { data, error }
+    } catch (error) {
+      console.error('Sign up error:', error)
+      return { data: null, error }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { data, error }
+    try {
+      setLoading(true)
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+      return { data, error }
+    } catch (error) {
+      console.error('Sign in error:', error)
+      return { data: null, error }
+    } finally {
+      setLoading(false)
+    }
   }
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
+    try {
+      setLoading(true)
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+      
+      // Clear local storage
+      localStorage.removeItem('resumeAnalysis')
+      localStorage.removeItem('viewResumeData')
+      
+      setUser(null)
+    } catch (error) {
+      console.error('Sign out error:', error)
+      throw error
+    } finally {
+      setLoading(false)
+    }
   }
 
   const value = {
@@ -69,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signOut,
+    refreshUser,
   }
 
   return (

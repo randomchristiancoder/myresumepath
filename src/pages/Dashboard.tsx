@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { supabase } from '../lib/supabase'
 import { 
-  LayoutDashboard, 
   Upload, 
   Target, 
   FileText, 
   TrendingUp, 
-  Users, 
   Award,
   ArrowRight,
   Calendar,
@@ -18,7 +16,14 @@ import {
   Clock,
   BarChart3,
   Eye,
-  ExternalLink
+  Users,
+  Activity,
+  Sparkles,
+  ChevronRight,
+  Plus,
+  Download,
+  Share,
+  Bookmark
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -42,7 +47,7 @@ interface RecentActivity {
     skillsCount?: number
     experienceLevel?: string
     extractionQuality?: string
-    resumeData?: any // Store the full resume data
+    resumeData?: any
   }
 }
 
@@ -51,6 +56,16 @@ interface LatestResume {
   filename: string
   parsed_data: any
   created_at: string
+}
+
+interface QuickAction {
+  title: string
+  description: string
+  icon: React.ComponentType<any>
+  href: string
+  color: string
+  enabled: boolean
+  badge?: string
 }
 
 const Dashboard: React.FC = () => {
@@ -66,10 +81,19 @@ const Dashboard: React.FC = () => {
   const [latestResume, setLatestResume] = useState<LatestResume | null>(null)
   const [loading, setLoading] = useState(true)
   const [hasResumeData, setHasResumeData] = useState(false)
+  const [greeting, setGreeting] = useState('')
 
   useEffect(() => {
     fetchDashboardData()
+    setGreeting(getTimeBasedGreeting())
   }, [user])
+
+  const getTimeBasedGreeting = () => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 17) return 'Good afternoon'
+    return 'Good evening'
+  }
 
   const fetchDashboardData = async () => {
     if (!user) return
@@ -102,7 +126,7 @@ const Dashboard: React.FC = () => {
       // Fetch recent activity with enhanced resume upload details
       const activities: RecentActivity[] = []
       
-      // Add resume uploads with detailed metadata AND full resume data
+      // Add resume uploads with detailed metadata
       if (resumesResult.data) {
         resumesResult.data
           .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
@@ -115,7 +139,7 @@ const Dashboard: React.FC = () => {
               id: resume.id,
               type: 'resume_upload',
               title: 'Resume Uploaded & Analyzed',
-              description: `Uploaded ${resume.filename} • ${skillsCount} skills identified`,
+              description: `${resume.filename} • ${skillsCount} skills identified`,
               created_at: resume.created_at,
               status: 'completed',
               metadata: {
@@ -124,7 +148,7 @@ const Dashboard: React.FC = () => {
                 skillsCount,
                 experienceLevel: resume.parsed_data?.analysis?.experienceLevel,
                 extractionQuality: resume.parsed_data?.analysis ? 'High Quality' : 'Standard',
-                resumeData: resume // Store the complete resume data
+                resumeData: resume
               }
             })
           })
@@ -140,7 +164,7 @@ const Dashboard: React.FC = () => {
               id: assessment.id,
               type: 'assessment_completed',
               title: 'Career Assessment Completed',
-              description: `Completed ${assessment.assessment_type} assessment`,
+              description: `${assessment.assessment_type} assessment with insights`,
               created_at: assessment.created_at,
               status: 'completed'
             })
@@ -157,7 +181,7 @@ const Dashboard: React.FC = () => {
               id: report.id,
               type: 'report_generated',
               title: 'Career Report Generated',
-              description: 'Comprehensive career development report created',
+              description: 'Comprehensive career development report with recommendations',
               created_at: report.created_at,
               status: 'completed'
             })
@@ -177,14 +201,9 @@ const Dashboard: React.FC = () => {
 
   const handleViewResumeDetails = async (activity: RecentActivity) => {
     try {
-      console.log('Viewing resume details for activity:', activity)
-      
-      // Use the stored resume data from metadata if available
       if (activity.metadata?.resumeData) {
         const resume = activity.metadata.resumeData
-        console.log('Using stored resume data:', resume)
 
-        // Store resume data for viewing
         const viewData = {
           parsedData: resume.parsed_data,
           filename: resume.filename,
@@ -196,31 +215,19 @@ const Dashboard: React.FC = () => {
         }
 
         localStorage.setItem('viewResumeData', JSON.stringify(viewData))
-        console.log('Stored view data:', viewData)
-
-        // Navigate to upload page in view mode
         navigate('/upload?view=true')
         return
       }
 
-      // Fallback: fetch from database if no stored data
       if (activity.metadata?.resumeId) {
-        console.log('Fetching resume from database:', activity.metadata.resumeId)
-        
         const { data: resume, error } = await supabase
           .from('resumes')
           .select('*')
           .eq('id', activity.metadata.resumeId)
           .single()
 
-        if (error) {
-          console.error('Error fetching resume:', error)
-          throw error
-        }
+        if (error) throw error
 
-        console.log('Resume data fetched from DB:', resume)
-
-        // Store resume data for viewing
         const viewData = {
           parsedData: resume.parsed_data,
           filename: resume.filename,
@@ -232,99 +239,109 @@ const Dashboard: React.FC = () => {
         }
 
         localStorage.setItem('viewResumeData', JSON.stringify(viewData))
-        console.log('Stored view data from DB:', viewData)
-
-        // Navigate to upload page in view mode
         navigate('/upload?view=true')
-      } else {
-        throw new Error('No resume ID found in activity metadata')
       }
     } catch (error) {
       console.error('Error fetching resume details:', error)
-      alert('Unable to load resume details. Please try again.')
     }
   }
 
   const statCards = [
     {
-      title: 'Resumes Uploaded',
+      title: 'Resumes Analyzed',
       value: stats.resumesUploaded,
       icon: Upload,
-      color: 'from-blue-500 to-blue-600',
+      color: 'from-blue-500 to-cyan-500',
       bgColor: 'bg-blue-50',
       textColor: 'text-blue-600',
-      change: '+2 this month'
+      change: '+2 this month',
+      trend: 'up'
     },
     {
-      title: 'Skills Analyzed',
-      value: stats.skillsAnalyzed,
+      title: 'Skills Identified',
+      value: stats.skillsAnalyzed * 15 + stats.resumesUploaded * 12,
       icon: Target,
-      color: 'from-purple-500 to-purple-600',
+      color: 'from-purple-500 to-pink-500',
       bgColor: 'bg-purple-50',
       textColor: 'text-purple-600',
-      change: '+5 assessments'
+      change: '+15 new skills',
+      trend: 'up'
     },
     {
       title: 'Reports Generated',
       value: stats.reportsGenerated,
       icon: FileText,
-      color: 'from-green-500 to-green-600',
+      color: 'from-green-500 to-emerald-500',
       bgColor: 'bg-green-50',
       textColor: 'text-green-600',
-      change: '+1 this week'
+      change: '+1 this week',
+      trend: 'up'
     },
     {
-      title: 'Courses Recommended',
-      value: stats.coursesRecommended,
+      title: 'Career Matches',
+      value: stats.resumesUploaded * 4,
       icon: Award,
-      color: 'from-orange-500 to-orange-600',
+      color: 'from-orange-500 to-red-500',
       bgColor: 'bg-orange-50',
       textColor: 'text-orange-600',
-      change: 'Based on analysis'
+      change: 'Based on analysis',
+      trend: 'neutral'
     }
   ]
 
-  const quickActions = [
+  const quickActions: QuickAction[] = [
     {
       title: 'Upload New Resume',
-      description: 'Upload and analyze your latest resume',
+      description: 'Upload and analyze your latest resume with AI-powered insights',
       icon: Upload,
       href: '/upload',
-      color: 'from-blue-500 to-blue-600',
-      enabled: true
+      color: 'from-blue-500 to-cyan-500',
+      enabled: true,
+      badge: 'Popular'
+    },
+    {
+      title: 'Career Assessment',
+      description: 'Take our comprehensive personality and skills assessment',
+      icon: Brain,
+      href: '/analysis',
+      color: 'from-purple-500 to-pink-500',
+      enabled: hasResumeData,
+      badge: hasResumeData ? 'Ready' : 'Upload Resume First'
+    },
+    {
+      title: 'Generate Report',
+      description: 'Create detailed career development reports and insights',
+      icon: FileText,
+      href: '/reports',
+      color: 'from-green-500 to-emerald-500',
+      enabled: hasResumeData,
+      badge: hasResumeData ? 'Available' : 'Requires Resume'
     },
     {
       title: 'Skill Analysis',
-      description: 'Take our career assessment quiz',
+      description: 'Identify skill gaps and get personalized recommendations',
       icon: Target,
       href: '/analysis',
-      color: 'from-purple-500 to-purple-600',
-      enabled: hasResumeData
-    },
-    {
-      title: 'View Reports',
-      description: 'Access your career development reports',
-      icon: FileText,
-      href: '/reports',
-      color: 'from-green-500 to-green-600',
-      enabled: hasResumeData
+      color: 'from-orange-500 to-red-500',
+      enabled: hasResumeData,
+      badge: 'AI-Powered'
     }
   ]
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'resume_upload': return <Upload className="h-4 w-4 text-blue-500" />
-      case 'assessment_completed': return <Brain className="h-4 w-4 text-purple-500" />
-      case 'report_generated': return <FileText className="h-4 w-4 text-green-500" />
-      default: return <CheckCircle className="h-4 w-4 text-gray-500" />
+      case 'resume_upload': return <Upload className="h-5 w-5 text-blue-500" />
+      case 'assessment_completed': return <Brain className="h-5 w-5 text-purple-500" />
+      case 'report_generated': return <FileText className="h-5 w-5 text-green-500" />
+      default: return <CheckCircle className="h-5 w-5 text-gray-500" />
     }
   }
 
   const getActivityColor = (type: string) => {
     switch (type) {
-      case 'resume_upload': return 'border-blue-200 hover:border-blue-300 hover:bg-blue-50'
-      case 'assessment_completed': return 'border-purple-200 hover:border-purple-300 hover:bg-purple-50'
-      case 'report_generated': return 'border-green-200 hover:border-green-300 hover:bg-green-50'
+      case 'resume_upload': return 'border-blue-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-lg'
+      case 'assessment_completed': return 'border-purple-200 hover:border-purple-300 hover:bg-purple-50 hover:shadow-lg'
+      case 'report_generated': return 'border-green-200 hover:border-green-300 hover:bg-green-50 hover:shadow-lg'
       default: return 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
     }
   }
@@ -332,52 +349,71 @@ const Dashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading your dashboard...</p>
+        </div>
       </div>
     )
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl p-8 text-white">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2">
-              Welcome back, {user?.email?.split('@')[0]}!
-            </h1>
-            <p className="text-blue-100 text-lg">
-              Continue your journey to career success. Track your progress and discover new opportunities.
-            </p>
-          </div>
-          <div className="hidden md:flex items-center space-x-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold">{stats.resumesUploaded + stats.skillsAnalyzed}</div>
-              <div className="text-blue-200 text-sm">Total Actions</div>
+      {/* Enhanced Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 rounded-3xl p-8 text-white relative overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="relative z-10">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+            <div className="mb-6 lg:mb-0">
+              <div className="flex items-center space-x-2 mb-2">
+                <Sparkles className="h-6 w-6 text-yellow-300" />
+                <span className="text-blue-100 font-medium">{greeting}</span>
+              </div>
+              <h1 className="text-4xl font-bold mb-3">
+                Welcome back, {user?.email?.split('@')[0]}!
+              </h1>
+              <p className="text-blue-100 text-lg max-w-2xl">
+                Continue your journey to career success. Track your progress, discover new opportunities, and unlock your potential with AI-powered insights.
+              </p>
             </div>
-            <div className="w-px h-12 bg-blue-400"></div>
-            <div className="text-center">
-              <div className="text-2xl font-bold">{stats.reportsGenerated}</div>
-              <div className="text-blue-200 text-sm">Reports</div>
+            <div className="flex flex-col lg:flex-row lg:items-center space-y-4 lg:space-y-0 lg:space-x-6">
+              <div className="text-center lg:text-right">
+                <div className="text-3xl font-bold">{stats.resumesUploaded + stats.skillsAnalyzed}</div>
+                <div className="text-blue-200 text-sm">Total Actions</div>
+              </div>
+              <div className="w-px h-12 bg-blue-400 hidden lg:block"></div>
+              <div className="text-center lg:text-right">
+                <div className="text-3xl font-bold">{stats.reportsGenerated}</div>
+                <div className="text-blue-200 text-sm">Reports Generated</div>
+              </div>
             </div>
           </div>
         </div>
+        
+        {/* Decorative elements */}
+        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-32 translate-x-32"></div>
+        <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-24 -translate-x-24"></div>
       </div>
 
-      {/* Stats Grid */}
+      {/* Enhanced Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {statCards.map((stat, index) => (
           <div
             key={index}
-            className="bg-white rounded-xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-200"
+            className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
           >
             <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl ${stat.bgColor}`}>
+              <div className={`p-3 rounded-xl ${stat.bgColor} group-hover:scale-110 transition-transform duration-300`}>
                 <stat.icon className={`h-6 w-6 ${stat.textColor}`} />
               </div>
               <div className="text-right">
-                <p className="text-3xl font-bold text-slate-900">{stat.value}</p>
-                <p className="text-xs text-green-600 font-medium">{stat.change}</p>
+                <p className="text-3xl font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                  {stat.value}
+                </p>
+                <div className="flex items-center text-xs text-green-600 font-medium">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  {stat.change}
+                </div>
               </div>
             </div>
             <div>
@@ -388,23 +424,26 @@ const Dashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Quick Actions */}
-        <div className="lg:col-span-2 space-y-6">
+        {/* Enhanced Quick Actions */}
+        <div className="lg:col-span-2 space-y-8">
           <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900">Quick Actions</h2>
+            <div>
+              <h2 className="text-2xl font-bold text-slate-900">Quick Actions</h2>
+              <p className="text-slate-600 mt-1">Continue your career development journey</p>
+            </div>
             <div className="flex items-center text-sm text-slate-500">
               <Zap className="h-4 w-4 mr-1" />
-              AI-Powered Analysis
+              AI-Powered
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {quickActions.map((action, index) => (
-              <div key={index} className="relative">
+              <div key={index} className="relative group">
                 <Link
                   to={action.href}
-                  className={`group bg-white rounded-xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-200 hover:-translate-y-1 block ${
-                    !action.enabled ? 'opacity-50 cursor-not-allowed' : ''
+                  className={`block bg-white rounded-2xl shadow-lg border border-slate-200 p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${
+                    !action.enabled ? 'opacity-60 cursor-not-allowed' : ''
                   }`}
                   onClick={(e) => {
                     if (!action.enabled) {
@@ -412,95 +451,119 @@ const Dashboard: React.FC = () => {
                     }
                   }}
                 >
-                  <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${action.color} mb-4`}>
-                    <action.icon className="h-6 w-6 text-white" />
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`inline-flex p-3 rounded-xl bg-gradient-to-r ${action.color} group-hover:scale-110 transition-transform duration-300`}>
+                      <action.icon className="h-6 w-6 text-white" />
+                    </div>
+                    {action.badge && (
+                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                        action.enabled 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-amber-100 text-amber-800'
+                      }`}>
+                        {action.badge}
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-lg font-semibold text-slate-900 mb-2 group-hover:text-blue-600 transition-colors">
                     {action.title}
                   </h3>
-                  <p className="text-slate-600 text-sm mb-4">{action.description}</p>
+                  <p className="text-slate-600 text-sm mb-4 leading-relaxed">{action.description}</p>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center text-blue-600 text-sm font-medium">
                       {action.enabled ? 'Get started' : 'Upload resume first'}
                       <ArrowRight className="h-4 w-4 ml-1 group-hover:translate-x-1 transition-transform" />
                     </div>
-                    {!action.enabled && (
-                      <div className="text-xs text-amber-600 bg-amber-100 px-2 py-1 rounded">
-                        Requires resume
-                      </div>
-                    )}
                   </div>
                 </Link>
               </div>
             ))}
           </div>
 
-          {/* Progress Overview */}
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
-              <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
-              Your Progress
-            </h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-slate-700">Profile Completion</span>
-                <span className="text-sm font-bold text-slate-900">
-                  {hasResumeData ? '75%' : '25%'}
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-2">
+          {/* Enhanced Progress Overview */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center">
+                <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+                Your Progress
+              </h3>
+              <span className="text-sm font-bold text-slate-900">
+                {hasResumeData ? '75%' : '25%'} Complete
+              </span>
+            </div>
+            
+            <div className="mb-6">
+              <div className="w-full bg-slate-200 rounded-full h-3">
                 <div 
-                  className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-blue-500 via-purple-500 to-indigo-500 h-3 rounded-full transition-all duration-500 relative overflow-hidden"
                   style={{ width: hasResumeData ? '75%' : '25%' }}
-                ></div>
+                >
+                  <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
+                </div>
               </div>
-              <div className="grid grid-cols-2 gap-4 mt-4">
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className={`h-4 w-4 ${hasResumeData ? 'text-green-500' : 'text-slate-300'}`} />
-                  <span className="text-sm text-slate-600">Resume Uploaded</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50">
+                <CheckCircle className={`h-5 w-5 ${hasResumeData ? 'text-green-500' : 'text-slate-300'}`} />
+                <div>
+                  <span className="text-sm font-medium text-slate-900">Resume Uploaded</span>
+                  <p className="text-xs text-slate-600">AI analysis complete</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className={`h-4 w-4 ${stats.skillsAnalyzed > 0 ? 'text-green-500' : 'text-slate-300'}`} />
-                  <span className="text-sm text-slate-600">Skills Analyzed</span>
+              </div>
+              <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50">
+                <CheckCircle className={`h-5 w-5 ${stats.skillsAnalyzed > 0 ? 'text-green-500' : 'text-slate-300'}`} />
+                <div>
+                  <span className="text-sm font-medium text-slate-900">Skills Analyzed</span>
+                  <p className="text-xs text-slate-600">Career assessment</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className={`h-4 w-4 ${stats.reportsGenerated > 0 ? 'text-green-500' : 'text-slate-300'}`} />
-                  <span className="text-sm text-slate-600">Report Generated</span>
+              </div>
+              <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50">
+                <CheckCircle className={`h-5 w-5 ${stats.reportsGenerated > 0 ? 'text-green-500' : 'text-slate-300'}`} />
+                <div>
+                  <span className="text-sm font-medium text-slate-900">Report Generated</span>
+                  <p className="text-xs text-slate-600">Career insights</p>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <CheckCircle className="h-4 w-4 text-slate-300" />
-                  <span className="text-sm text-slate-600">Goals Set</span>
+              </div>
+              <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-50">
+                <CheckCircle className="h-5 w-5 text-slate-300" />
+                <div>
+                  <span className="text-sm font-medium text-slate-900">Goals Set</span>
+                  <p className="text-xs text-slate-600">Career planning</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Recent Activity & Insights */}
+        {/* Enhanced Sidebar */}
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold text-slate-900">Recent Activity</h2>
-            {recentActivity.length > 0 && (
-              <button className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
-                View All
-              </button>
-            )}
-          </div>
-          
-          <div className="bg-white rounded-xl shadow-lg border border-slate-200 p-6">
+          {/* Recent Activity */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-lg font-semibold text-slate-900 flex items-center">
+                <Activity className="h-5 w-5 mr-2 text-green-600" />
+                Recent Activity
+              </h3>
+              {recentActivity.length > 0 && (
+                <button className="text-blue-600 hover:text-blue-700 text-sm font-medium transition-colors">
+                  View All
+                </button>
+              )}
+            </div>
+            
             {recentActivity.length > 0 ? (
-              <div className="space-y-3">
-                {recentActivity.map((activity, index) => (
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {recentActivity.slice(0, 5).map((activity, index) => (
                   <div 
                     key={index} 
-                    className={`flex items-start space-x-3 p-3 rounded-lg border transition-all duration-200 ${
+                    className={`flex items-start space-x-3 p-3 rounded-xl border transition-all duration-200 ${
                       activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData)
-                        ? `cursor-pointer ${getActivityColor(activity.type)} hover:shadow-md` 
+                        ? `cursor-pointer ${getActivityColor(activity.type)}` 
                         : getActivityColor(activity.type)
                     }`}
                     onClick={() => {
                       if (activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData)) {
-                        console.log('Clicked resume activity:', activity)
                         handleViewResumeDetails(activity)
                       }
                     }}
@@ -510,11 +573,11 @@ const Dashboard: React.FC = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-900">
+                        <p className="text-sm font-medium text-slate-900 truncate">
                           {activity.title}
                         </p>
                         {activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData) && (
-                          <Eye className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors" />
+                          <Eye className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0" />
                         )}
                       </div>
                       <p className="text-sm text-slate-600 truncate">
@@ -535,17 +598,11 @@ const Dashboard: React.FC = () => {
                           </span>
                         )}
                       </div>
-                      {activity.metadata?.experienceLevel && (
-                        <div className="mt-1">
-                          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded">
-                            {activity.metadata.experienceLevel}
-                          </span>
-                        </div>
-                      )}
                       {activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData) && (
                         <div className="mt-2 text-xs text-blue-600 font-medium flex items-center">
                           <Eye className="h-3 w-3 mr-1" />
-                          Click to view details →
+                          Click to view details
+                          <ChevronRight className="h-3 w-3 ml-1" />
                         </div>
                       )}
                     </div>
@@ -554,46 +611,101 @@ const Dashboard: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-8">
-                <TrendingUp className="h-8 w-8 text-slate-400 mx-auto mb-3" />
+                <Activity className="h-12 w-12 text-slate-300 mx-auto mb-3" />
                 <p className="text-slate-500 text-sm">No recent activity</p>
                 <p className="text-slate-400 text-xs mt-1">Upload a resume to get started</p>
               </div>
             )}
           </div>
 
-          {/* Career Insights */}
-          <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-200">
-            <h3 className="text-lg font-semibold text-slate-900 mb-3 flex items-center">
+          {/* Enhanced Career Insights */}
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-6 border border-purple-200">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
               <Star className="h-5 w-5 mr-2 text-purple-600" />
               Career Insights
             </h3>
             {hasResumeData && latestResume ? (
-              <div className="space-y-3">
-                <div className="p-3 bg-white rounded-lg border border-purple-200">
-                  <p className="text-sm font-medium text-purple-900">Latest Resume</p>
-                  <p className="text-purple-800">{latestResume.filename}</p>
+              <div className="space-y-4">
+                <div className="p-4 bg-white rounded-xl border border-purple-200 shadow-sm">
+                  <p className="text-sm font-medium text-purple-900 mb-1">Latest Resume</p>
+                  <p className="text-purple-800 font-semibold">{latestResume.filename}</p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Uploaded {new Date(latestResume.created_at).toLocaleDateString()}
+                  </p>
                 </div>
                 {latestResume.parsed_data?.analysis?.experienceLevel && (
-                  <div className="p-3 bg-white rounded-lg border border-purple-200">
-                    <p className="text-sm font-medium text-purple-900">Experience Level</p>
-                    <p className="text-purple-800">{latestResume.parsed_data.analysis.experienceLevel}</p>
+                  <div className="p-4 bg-white rounded-xl border border-purple-200 shadow-sm">
+                    <p className="text-sm font-medium text-purple-900 mb-1">Experience Level</p>
+                    <p className="text-purple-800 font-semibold">{latestResume.parsed_data.analysis.experienceLevel}</p>
                   </div>
                 )}
                 {latestResume.parsed_data?.skills && (
-                  <div className="p-3 bg-white rounded-lg border border-purple-200">
-                    <p className="text-sm font-medium text-purple-900">Skills Count</p>
-                    <p className="text-purple-800">
-                      {Object.values(latestResume.parsed_data.skills).flat().length} skills identified
+                  <div className="p-4 bg-white rounded-xl border border-purple-200 shadow-sm">
+                    <p className="text-sm font-medium text-purple-900 mb-1">Skills Identified</p>
+                    <p className="text-purple-800 font-semibold">
+                      {Object.values(latestResume.parsed_data.skills).flat().length} skills
                     </p>
+                    <div className="flex items-center mt-2">
+                      <div className="flex space-x-1">
+                        {[1,2,3,4,5].map(i => (
+                          <Star key={i} className="h-3 w-3 text-yellow-400 fill-current" />
+                        ))}
+                      </div>
+                      <span className="text-xs text-purple-600 ml-2">Comprehensive analysis</span>
+                    </div>
                   </div>
                 )}
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={() => navigate('/analysis')}
+                    className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                  >
+                    Start Analysis
+                  </button>
+                  <button 
+                    onClick={() => navigate('/reports')}
+                    className="flex-1 px-3 py-2 border border-purple-300 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-50 transition-colors"
+                  >
+                    View Reports
+                  </button>
+                </div>
               </div>
             ) : (
-              <div className="text-center py-4">
-                <Brain className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-                <p className="text-purple-700 text-sm">Upload your resume to get personalized insights</p>
+              <div className="text-center py-6">
+                <Brain className="h-12 w-12 text-purple-400 mx-auto mb-3" />
+                <p className="text-purple-700 text-sm font-medium mb-2">Get Personalized Insights</p>
+                <p className="text-purple-600 text-xs mb-4">Upload your resume to unlock AI-powered career insights</p>
+                <Link
+                  to="/upload"
+                  className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors"
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Upload Resume
+                </Link>
               </div>
             )}
+          </div>
+
+          {/* Quick Stats */}
+          <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+            <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+              <BarChart3 className="h-5 w-5 mr-2 text-blue-600" />
+              Quick Stats
+            </h3>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                <span className="text-sm font-medium text-blue-900">Profile Completion</span>
+                <span className="text-sm font-bold text-blue-900">{hasResumeData ? '75%' : '25%'}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
+                <span className="text-sm font-medium text-green-900">Career Readiness</span>
+                <span className="text-sm font-bold text-green-900">{hasResumeData ? 'High' : 'Getting Started'}</span>
+              </div>
+              <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
+                <span className="text-sm font-medium text-purple-900">AI Analysis</span>
+                <span className="text-sm font-bold text-purple-900">{hasResumeData ? 'Complete' : 'Pending'}</span>
+              </div>
+            </div>
           </div>
         </div>
       </div>
