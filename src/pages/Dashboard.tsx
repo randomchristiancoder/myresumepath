@@ -24,7 +24,8 @@ import {
   Download,
   Share,
   Bookmark,
-  ExternalLink
+  ExternalLink,
+  MousePointer
 } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -83,6 +84,7 @@ const Dashboard: React.FC = () => {
   const [loading, setLoading] = useState(true)
   const [hasResumeData, setHasResumeData] = useState(false)
   const [greeting, setGreeting] = useState('')
+  const [clickingActivity, setClickingActivity] = useState<string | null>(null)
 
   useEffect(() => {
     fetchDashboardData()
@@ -201,53 +203,62 @@ const Dashboard: React.FC = () => {
   }
 
   const handleViewResumeDetails = async (activity: RecentActivity) => {
+    if (!activity.metadata?.resumeId && !activity.metadata?.resumeData) {
+      console.error('No resume data available for this activity')
+      return
+    }
+
+    setClickingActivity(activity.id)
+
     try {
-      if (activity.metadata?.resumeData) {
-        const resume = activity.metadata.resumeData
+      let resumeData = activity.metadata.resumeData
 
-        const viewData = {
-          parsedData: resume.parsed_data,
-          filename: resume.filename,
-          uploadedAt: resume.created_at,
-          resumeId: resume.id,
-          content: resume.content,
-          aiEnhanced: true,
-          extractionQuality: activity.metadata.extractionQuality || 'High Quality'
-        }
-
-        localStorage.setItem('viewResumeData', JSON.stringify(viewData))
-        navigate('/upload?view=true')
-        return
-      }
-
-      if (activity.metadata?.resumeId) {
+      // If we don't have the full resume data, fetch it
+      if (!resumeData && activity.metadata.resumeId) {
         const { data: resume, error } = await supabase
           .from('resumes')
           .select('*')
           .eq('id', activity.metadata.resumeId)
           .single()
 
-        if (error) throw error
-
-        const viewData = {
-          parsedData: resume.parsed_data,
-          filename: resume.filename,
-          uploadedAt: resume.created_at,
-          resumeId: resume.id,
-          content: resume.content,
-          aiEnhanced: true,
-          extractionQuality: 'High Quality'
+        if (error) {
+          console.error('Error fetching resume:', error)
+          return
         }
-
-        localStorage.setItem('viewResumeData', JSON.stringify(viewData))
-        navigate('/upload?view=true')
+        resumeData = resume
       }
+
+      if (!resumeData) {
+        console.error('Could not load resume data')
+        return
+      }
+
+      // Prepare view data
+      const viewData = {
+        parsedData: resumeData.parsed_data,
+        filename: resumeData.filename,
+        uploadedAt: resumeData.created_at,
+        resumeId: resumeData.id,
+        content: resumeData.content,
+        aiEnhanced: true,
+        extractionQuality: activity.metadata.extractionQuality || 'High Quality'
+      }
+
+      // Store in localStorage and navigate
+      localStorage.setItem('viewResumeData', JSON.stringify(viewData))
+      navigate('/upload?view=true')
+
     } catch (error) {
-      console.error('Error fetching resume details:', error)
+      console.error('Error viewing resume details:', error)
+    } finally {
+      setClickingActivity(null)
     }
   }
 
   const handleActivityClick = (activity: RecentActivity) => {
+    // Prevent double clicks
+    if (clickingActivity === activity.id) return
+
     switch (activity.type) {
       case 'resume_upload':
         if (activity.metadata?.resumeId || activity.metadata?.resumeData) {
@@ -358,17 +369,19 @@ const Dashboard: React.FC = () => {
 
   const getActivityColor = (type: string) => {
     switch (type) {
-      case 'resume_upload': return 'border-blue-200 hover:border-blue-300 hover:bg-blue-50 hover:shadow-lg'
-      case 'assessment_completed': return 'border-purple-200 hover:border-purple-300 hover:bg-purple-50 hover:shadow-lg'
-      case 'report_generated': return 'border-green-200 hover:border-green-300 hover:bg-green-50 hover:shadow-lg'
+      case 'resume_upload': return 'border-blue-200 hover:border-blue-400 hover:bg-blue-50 hover:shadow-lg'
+      case 'assessment_completed': return 'border-purple-200 hover:border-purple-400 hover:bg-purple-50 hover:shadow-lg'
+      case 'report_generated': return 'border-green-200 hover:border-green-400 hover:bg-green-50 hover:shadow-lg'
       default: return 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
     }
   }
 
   const isActivityClickable = (activity: RecentActivity) => {
-    return activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData) ||
-           activity.type === 'assessment_completed' ||
-           activity.type === 'report_generated'
+    return (
+      (activity.type === 'resume_upload' && (activity.metadata?.resumeId || activity.metadata?.resumeData)) ||
+      activity.type === 'assessment_completed' ||
+      activity.type === 'report_generated'
+    )
   }
 
   const getActivityActionText = (activity: RecentActivity) => {
@@ -592,62 +605,74 @@ const Dashboard: React.FC = () => {
             
             {recentActivity.length > 0 ? (
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {recentActivity.slice(0, 5).map((activity, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex items-start space-x-3 p-3 rounded-xl border transition-all duration-200 ${
-                      isActivityClickable(activity)
-                        ? `cursor-pointer ${getActivityColor(activity.type)} transform hover:scale-[1.02]` 
-                        : getActivityColor(activity.type)
-                    }`}
-                    onClick={() => {
-                      if (isActivityClickable(activity)) {
-                        handleActivityClick(activity)
-                      }
-                    }}
-                  >
-                    <div className="flex-shrink-0 mt-1">
-                      {getActivityIcon(activity.type)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-900 truncate">
-                          {activity.title}
+                {recentActivity.slice(0, 5).map((activity, index) => {
+                  const isClickable = isActivityClickable(activity)
+                  const isClicking = clickingActivity === activity.id
+                  
+                  return (
+                    <div 
+                      key={index} 
+                      className={`relative flex items-start space-x-3 p-4 rounded-xl border transition-all duration-200 ${
+                        isClickable
+                          ? `cursor-pointer ${getActivityColor(activity.type)} transform hover:scale-[1.02] active:scale-[0.98]` 
+                          : getActivityColor(activity.type)
+                      } ${isClicking ? 'opacity-75 scale-95' : ''}`}
+                      onClick={() => {
+                        if (isClickable && !isClicking) {
+                          handleActivityClick(activity)
+                        }
+                      }}
+                    >
+                      {/* Loading indicator */}
+                      {isClicking && (
+                        <div className="absolute inset-0 bg-white/80 rounded-xl flex items-center justify-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        </div>
+                      )}
+                      
+                      <div className="flex-shrink-0 mt-1">
+                        {getActivityIcon(activity.type)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-medium text-slate-900 truncate">
+                            {activity.title}
+                          </p>
+                          {isClickable && (
+                            <div className="flex items-center space-x-1 ml-2">
+                              <MousePointer className="h-4 w-4 text-blue-500 hover:text-blue-600 transition-colors flex-shrink-0" />
+                              <ChevronRight className="h-4 w-4 text-blue-500 hover:text-blue-600 transition-colors flex-shrink-0" />
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-slate-600 truncate">
+                          {activity.description}
                         </p>
-                        {isActivityClickable(activity) && (
-                          <div className="flex items-center space-x-1">
-                            <Eye className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0" />
-                            <ChevronRight className="h-4 w-4 text-slate-400 hover:text-blue-500 transition-colors flex-shrink-0" />
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center text-xs text-slate-500">
+                            <Clock className="h-3 w-3 mr-1" />
+                            {new Date(activity.created_at).toLocaleDateString()}
+                          </div>
+                          {activity.metadata?.extractionQuality && (
+                            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                              activity.metadata.extractionQuality === 'High Quality'
+                                ? 'bg-green-100 text-green-800'
+                                : 'bg-blue-100 text-blue-800'
+                            }`}>
+                              {activity.metadata.extractionQuality}
+                            </span>
+                          )}
+                        </div>
+                        {isClickable && (
+                          <div className="mt-2 text-xs text-blue-600 font-medium flex items-center">
+                            <Eye className="h-3 w-3 mr-1" />
+                            {getActivityActionText(activity)}
                           </div>
                         )}
                       </div>
-                      <p className="text-sm text-slate-600 truncate">
-                        {activity.description}
-                      </p>
-                      <div className="flex items-center justify-between mt-2">
-                        <div className="flex items-center text-xs text-slate-500">
-                          <Clock className="h-3 w-3 mr-1" />
-                          {new Date(activity.created_at).toLocaleDateString()}
-                        </div>
-                        {activity.metadata?.extractionQuality && (
-                          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                            activity.metadata.extractionQuality === 'High Quality'
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-blue-100 text-blue-800'
-                          }`}>
-                            {activity.metadata.extractionQuality}
-                          </span>
-                        )}
-                      </div>
-                      {isActivityClickable(activity) && (
-                        <div className="mt-2 text-xs text-blue-600 font-medium flex items-center">
-                          <ExternalLink className="h-3 w-3 mr-1" />
-                          {getActivityActionText(activity)}
-                        </div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="text-center py-8">
