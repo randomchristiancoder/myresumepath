@@ -211,7 +211,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             type: 'skill',
             title: 'Skills Identified',
             value: `${totalSkills} skills`,
-            color: 'text-blue-600',
+            color: 'text-orange-400',
             icon: Target
           })
         }
@@ -222,7 +222,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             type: 'experience',
             title: 'Experience Level',
             value: parsedData.analysis.experienceLevel,
-            color: 'text-green-600',
+            color: 'text-green-400',
             icon: TrendingUp
           })
         }
@@ -233,7 +233,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             type: 'recommendation',
             title: 'Leadership Ready',
             value: 'Management potential',
-            color: 'text-purple-600',
+            color: 'text-purple-400',
             icon: Award
           })
         }
@@ -243,7 +243,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           type: 'match',
           title: 'Career Match',
           value: '94% Senior Engineer',
-          color: 'text-orange-600',
+          color: 'text-orange-400',
           icon: Star
         })
       }
@@ -365,19 +365,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'resume_upload': return <Upload className="h-4 w-4 text-blue-500" />
-      case 'assessment_completed': return <Brain className="h-4 w-4 text-purple-500" />
-      case 'report_generated': return <FileText className="h-4 w-4 text-green-500" />
-      default: return <Activity className="h-4 w-4 text-gray-500" />
+      case 'resume_upload': return <Upload className="h-4 w-4 text-orange-400" />
+      case 'assessment_completed': return <Brain className="h-4 w-4 text-purple-400" />
+      case 'report_generated': return <FileText className="h-4 w-4 text-green-400" />
+      default: return <Activity className="h-4 w-4 text-gray-400" />
     }
   }
 
   const getActivityColor = (type: string) => {
     switch (type) {
-      case 'resume_upload': return 'border-blue-200 hover:border-blue-400 hover:bg-blue-50'
-      case 'assessment_completed': return 'border-purple-200 hover:border-purple-400 hover:bg-purple-50'
-      case 'report_generated': return 'border-green-200 hover:border-green-400 hover:bg-green-50'
-      default: return 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+      case 'resume_upload': return 'border-orange-500/30 hover:border-orange-400 hover:bg-orange-500/10'
+      case 'assessment_completed': return 'border-purple-500/30 hover:border-purple-400 hover:bg-purple-500/10'
+      case 'report_generated': return 'border-green-500/30 hover:border-green-400 hover:bg-green-500/10'
+      default: return 'border-gray-600 hover:border-gray-500 hover:bg-gray-700'
     }
   }
 
@@ -393,7 +393,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const closeSidebar = () => setIsSidebarOpen(false)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black">
       {/* Skip Links for Accessibility */}
       <a href="#main-navigation" className="skip-link">
         Skip to navigation
@@ -405,19 +405,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Mobile sidebar overlay */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          className="fixed inset-0 z-40 bg-black bg-opacity-75 lg:hidden"
           onClick={closeSidebar}
           aria-hidden="true"
         />
       )}
 
       {/* Sidebar with Enhanced Accessibility */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-2xl border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-gray-900 shadow-2xl border-r border-gray-700 transform transition-transform duration-300 ease-in-out ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0 overflow-y-auto`} role="navigation" aria-label="Main navigation">
+      } lg:translate-x-0 overflow-y-auto sidebar`} role="navigation" aria-label="Main navigation">
         <div className="flex h-full flex-col">
           {/* Logo */}
-          <div className="flex h-20 items-center justify-between px-6 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-purple-600">
+          <div className="flex h-20 items-center justify-between px-6 border-b border-gray-700 header-gradient">
             <div className="flex items-center space-x-3">
               <div className="p-2 bg-white/20 rounded-xl">
                 <BrainCircuit className="h-8 w-8 text-white" aria-hidden="true" />
@@ -426,12 +426,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 <span className="text-xl font-bold text-white">
                   My Resume Path
                 </span>
-                <p className="text-blue-100 text-xs">Career Development Platform</p>
+                <p className="text-orange-200 text-xs">Career Development Platform</p>
               </div>
             </div>
             <button
               onClick={closeSidebar}
-              className="lg:hidden text-white hover:text-blue-200 transition-colors interactive"
+              className="lg:hidden text-white hover:text-orange-200 transition-colors interactive"
               aria-label="Close navigation menu"
             >
               <X className="h-6 w-6" />
@@ -447,23 +447,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   key={item.name}
                   to={item.href}
                   onClick={closeSidebar}
-                  className={`group flex items-center px-4 py-3 text-sm font-medium rounded-xl transition-all duration-200 interactive card-hover ${
-                    isActive
-                      ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white shadow-lg transform scale-105'
-                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 hover:shadow-md'
-                  } ${item.name === 'Admin Panel' ? 'border border-red-200 bg-red-50 hover:bg-red-100' : ''}`}
+                  className={`sidebar-item ${isActive ? 'active' : ''} ${item.name === 'Admin Panel' ? 'border border-red-500/30 bg-red-500/10' : ''}`}
                   role="menuitem"
                   aria-current={isActive ? 'page' : undefined}
                 >
-                  <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-white' : 'text-slate-500 group-hover:text-slate-700'}`} aria-hidden="true" />
+                  <item.icon className={`mr-3 h-5 w-5 ${isActive ? 'text-black' : 'text-gray-400'}`} aria-hidden="true" />
                   <div className="flex-1">
-                    <div className="font-medium">{item.name}</div>
-                    <div className={`text-xs ${isActive ? 'text-blue-100' : 'text-slate-500'}`}>
+                    <div className="font-medium text-safe">{item.name}</div>
+                    <div className={`text-xs ${isActive ? 'text-black/70' : 'text-gray-500'} text-safe`}>
                       {item.description}
                     </div>
                   </div>
                   {item.name === 'Admin Panel' && (
-                    <Shield className="ml-auto h-4 w-4 text-red-500" aria-hidden="true" />
+                    <Shield className="ml-auto h-4 w-4 text-red-400" aria-hidden="true" />
                   )}
                   {notifications > 0 && item.name === 'Dashboard' && (
                     <span className="ml-auto bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center" aria-label={`${notifications} new notifications`}>
@@ -477,16 +473,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Recent Activity Section with Enhanced Accessibility */}
           <div className="px-4 pb-4">
-            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200 card-hover">
+            <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 card-hover">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center">
-                  <Activity className="h-4 w-4 mr-2 text-green-600" aria-hidden="true" />
+                <h3 className="text-sm font-semibold text-white flex items-center">
+                  <Activity className="h-4 w-4 mr-2 text-green-400" aria-hidden="true" />
                   Recent Activity
                 </h3>
                 {recentActivity.length > 0 && (
                   <button 
                     onClick={() => navigate('/dashboard')}
-                    className="text-xs text-blue-600 hover:text-blue-700 transition-colors interactive"
+                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors interactive"
                     aria-label="View all recent activity"
                   >
                     View All
@@ -526,8 +522,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                         aria-label={isClickable ? `${activity.title}: ${activity.description}. Click to view details.` : `${activity.title}: ${activity.description}`}
                       >
                         {isClicking && (
-                          <div className="absolute inset-0 bg-white/80 rounded-lg flex items-center justify-center" aria-hidden="true">
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          <div className="absolute inset-0 bg-black/50 rounded-lg flex items-center justify-center" aria-hidden="true">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400"></div>
                           </div>
                         )}
                         
@@ -535,21 +531,21 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                           {getActivityIcon(activity.type)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-slate-900 truncate">
+                          <p className="text-xs font-medium text-white truncate-safe">
                             {activity.title}
                           </p>
-                          <p className="text-xs text-slate-600 truncate">
+                          <p className="text-xs text-gray-400 truncate-safe">
                             {activity.description}
                           </p>
                           <div className="flex items-center justify-between mt-1">
-                            <div className="flex items-center text-xs text-slate-500">
+                            <div className="flex items-center text-xs text-gray-500">
                               <Clock className="h-3 w-3 mr-1" aria-hidden="true" />
                               <time dateTime={activity.created_at}>
                                 {new Date(activity.created_at).toLocaleDateString()}
                               </time>
                             </div>
                             {isClickable && (
-                              <ChevronRight className="h-3 w-3 text-blue-500" aria-hidden="true" />
+                              <ChevronRight className="h-3 w-3 text-orange-400" aria-hidden="true" />
                             )}
                           </div>
                         </div>
@@ -559,8 +555,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <Activity className="h-8 w-8 text-slate-300 mx-auto mb-2" aria-hidden="true" />
-                  <p className="text-slate-500 text-xs">No recent activity</p>
+                  <Activity className="h-8 w-8 text-gray-600 mx-auto mb-2" aria-hidden="true" />
+                  <p className="text-gray-500 text-xs">No recent activity</p>
                 </div>
               )}
             </div>
@@ -568,16 +564,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
           {/* Career Insights Section with Enhanced Accessibility */}
           <div className="px-4 pb-4">
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-4 border border-purple-200 card-hover">
+            <div className="bg-gradient-to-br from-orange-500/10 to-orange-400/10 rounded-xl p-4 border border-orange-500/30 card-hover">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-slate-900 flex items-center">
-                  <Star className="h-4 w-4 mr-2 text-purple-600" aria-hidden="true" />
+                <h3 className="text-sm font-semibold text-white flex items-center">
+                  <Star className="h-4 w-4 mr-2 text-orange-400" aria-hidden="true" />
                   Career Insights
                 </h3>
                 {careerInsights.length > 0 && (
                   <button 
                     onClick={() => navigate('/analysis')}
-                    className="text-xs text-purple-600 hover:text-purple-700 transition-colors interactive"
+                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors interactive"
                     aria-label="View more career insights"
                   >
                     View More
@@ -588,12 +584,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               {careerInsights.length > 0 ? (
                 <div className="space-y-2" role="list" aria-label="Career insights">
                   {careerInsights.slice(0, 3).map((insight, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 bg-white rounded-lg border border-purple-200 interactive" role="listitem">
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-800 rounded-lg border border-orange-500/20 interactive" role="listitem">
                       <div className="flex items-center space-x-2">
                         <insight.icon className={`h-3 w-3 ${insight.color}`} aria-hidden="true" />
                         <div>
-                          <p className="text-xs font-medium text-slate-900">{insight.title}</p>
-                          <p className={`text-xs ${insight.color}`}>{insight.value}</p>
+                          <p className="text-xs font-medium text-white text-safe">{insight.title}</p>
+                          <p className={`text-xs ${insight.color} text-safe`}>{insight.value}</p>
                         </div>
                       </div>
                     </div>
@@ -601,11 +597,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                 </div>
               ) : (
                 <div className="text-center py-4">
-                  <Brain className="h-8 w-8 text-purple-300 mx-auto mb-2" aria-hidden="true" />
-                  <p className="text-purple-600 text-xs mb-2">Upload resume for insights</p>
+                  <Brain className="h-8 w-8 text-orange-400/50 mx-auto mb-2" aria-hidden="true" />
+                  <p className="text-orange-300 text-xs mb-2">Upload resume for insights</p>
                   <button 
                     onClick={() => navigate('/upload')}
-                    className="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 transition-colors interactive"
+                    className="text-xs bg-orange-500 text-black px-2 py-1 rounded hover:bg-orange-400 transition-colors interactive"
                   >
                     Get Started
                   </button>
@@ -615,45 +611,45 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           {/* User Info with Enhanced Accessibility */}
-          <div className="border-t border-slate-200 p-4 mt-auto">
+          <div className="border-t border-gray-700 p-4 mt-auto">
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-slate-50 transition-colors interactive"
+                className="w-full flex items-center space-x-3 p-3 rounded-xl hover:bg-gray-800 transition-colors interactive"
                 aria-expanded={userMenuOpen}
                 aria-haspopup="menu"
                 aria-label="User menu"
               >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white text-sm font-medium">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-orange-500 to-orange-400 text-black text-sm font-medium">
                   <User className="h-5 w-5" aria-hidden="true" />
                 </div>
                 <div className="flex-1 min-w-0 text-left">
-                  <p className="text-sm font-medium text-slate-900 truncate">
+                  <p className="text-sm font-medium text-white truncate-safe">
                     {user?.email}
                   </p>
                   <div className="flex items-center space-x-2">
                     {isAdmin && (
-                      <span className="text-xs text-red-600 font-medium bg-red-100 px-2 py-1 rounded">
+                      <span className="text-xs text-red-400 font-medium bg-red-500/20 px-2 py-1 rounded">
                         Administrator
                       </span>
                     )}
-                    <span className="text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                    <span className="text-xs text-green-400 bg-green-500/20 px-2 py-1 rounded">
                       Online
                     </span>
                   </div>
                 </div>
-                <ChevronDown className={`h-4 w-4 text-slate-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${userMenuOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
               </button>
 
               {/* User dropdown menu with Enhanced Accessibility */}
               {userMenuOpen && (
-                <div className="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-xl shadow-lg border border-slate-200 py-2" role="menu" aria-label="User menu options">
+                <div className="absolute bottom-full left-0 right-0 mb-2 bg-gray-800 rounded-xl shadow-lg border border-gray-700 py-2" role="menu" aria-label="User menu options">
                   <button
                     onClick={() => {
                       setUserMenuOpen(false)
                       navigate('/api-keys')
                     }}
-                    className="w-full flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 interactive"
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 interactive"
                     role="menuitem"
                   >
                     <Settings className="h-4 w-4 mr-3" aria-hidden="true" />
@@ -664,19 +660,19 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                       setUserMenuOpen(false)
                       navigate('/progress')
                     }}
-                    className="w-full flex items-center px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 interactive"
+                    className="w-full flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 interactive"
                     role="menuitem"
                   >
                     <BarChart3 className="h-4 w-4 mr-3" aria-hidden="true" />
                     Progress
                   </button>
-                  <hr className="my-2 border-slate-200" role="separator" />
+                  <hr className="my-2 border-gray-700" role="separator" />
                   <button
                     onClick={() => {
                       setUserMenuOpen(false)
                       handleSignOut()
                     }}
-                    className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 interactive"
+                    className="w-full flex items-center px-4 py-2 text-sm text-red-400 hover:bg-red-500/20 interactive"
                     role="menuitem"
                   >
                     <LogOut className="h-4 w-4 mr-3" aria-hidden="true" />
@@ -692,22 +688,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main Content with Enhanced Accessibility */}
       <div className="lg:pl-80">
         {/* Top bar for mobile with Enhanced Accessibility */}
-        <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between" role="banner">
+        <div className="lg:hidden bg-gray-900 border-b border-gray-700 px-4 py-3 flex items-center justify-between" role="banner">
           <button
             onClick={toggleSidebar}
-            className="text-slate-600 hover:text-slate-900 transition-colors interactive"
+            className="text-gray-300 hover:text-white transition-colors interactive"
             aria-label="Open navigation menu"
           >
             <Menu className="h-6 w-6" />
           </button>
           <div className="flex items-center space-x-2">
-            <BrainCircuit className="h-6 w-6 text-blue-600" aria-hidden="true" />
-            <span className="font-semibold text-slate-900">My Resume Path</span>
+            <BrainCircuit className="h-6 w-6 text-orange-400" aria-hidden="true" />
+            <span className="font-semibold text-white text-safe">My Resume Path</span>
           </div>
           <div className="flex items-center space-x-2">
             {notifications > 0 && (
               <div className="relative">
-                <Bell className="h-5 w-5 text-slate-600" aria-hidden="true" />
+                <Bell className="h-5 w-5 text-gray-300" aria-hidden="true" />
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-4 w-4 flex items-center justify-center" aria-label={`${notifications} notifications`}>
                   {notifications}
                 </span>
@@ -717,7 +713,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </div>
 
         {/* Page content with Enhanced Accessibility */}
-        <main className="min-h-screen p-4 lg:p-8" id="main-content" role="main">
+        <main className="min-h-screen container-padding" id="main-content" role="main">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>
