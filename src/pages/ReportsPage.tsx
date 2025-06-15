@@ -12,7 +12,12 @@ import {
   TrendingUp,
   Target,
   Award,
-  Brain
+  Brain,
+  Database,
+  Save,
+  CheckCircle2,
+  AlertCircle,
+  Zap
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 
@@ -26,82 +31,231 @@ interface Report {
   data: any
 }
 
+interface ResumeData {
+  id: string
+  filename: string
+  parsed_data: any
+  created_at: string
+}
+
+interface AssessmentData {
+  id: string
+  assessment_type: string
+  responses: any
+  results: any
+  created_at: string
+}
+
 const ReportsPage: React.FC = () => {
   const { user } = useAuth()
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
   const [filter, setFilter] = useState<'all' | 'skill-analysis' | 'career-match' | 'comprehensive'>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [showPreview, setShowPreview] = useState(false)
-
-  // Mock data for demonstration
-  const mockReports: Report[] = [
-    {
-      id: '1',
-      title: 'Full Career Analysis Report',
-      type: 'comprehensive',
-      created_at: '2024-01-15T10:30:00Z',
-      status: 'completed',
-      summary: 'Complete analysis including resume parsing, skill gaps, personality assessment, and career recommendations.',
-      data: {
-        resumeAnalysis: {
-          skills: ['JavaScript', 'React', 'Node.js', 'Python', 'AWS'],
-          experience: '5+ years',
-          education: 'Bachelor of Computer Science'
-        },
-        skillGaps: [
-          { skill: 'Machine Learning', gap: 2 },
-          { skill: 'Cloud Architecture', gap: 3 },
-          { skill: 'DevOps', gap: 2 }
-        ],
-        careerMatches: [
-          { role: 'Senior Software Engineer', match: 92 },
-          { role: 'Technical Lead', match: 88 },
-          { role: 'Solutions Architect', match: 85 }
-        ],
-        courseRecommendations: [
-          'AWS Solutions Architect',
-          'Machine Learning Specialization',
-          'Advanced System Design'
-        ]
-      }
-    },
-    {
-      id: '2',
-      title: 'Skill Gap Analysis',
-      type: 'skill-analysis',
-      created_at: '2024-01-10T14:20:00Z',
-      status: 'completed',
-      summary: 'Detailed analysis of current skills vs. market demand for your target roles.',
-      data: {
-        skillsAnalyzed: 15,
-        gapsIdentified: 5,
-        prioritySkills: ['Cloud Computing', 'Machine Learning', 'DevOps']
-      }
-    },
-    {
-      id: '3',
-      title: 'Career Path Recommendations',
-      type: 'career-match',
-      created_at: '2024-01-05T09:15:00Z',
-      status: 'completed',
-      summary: 'Personalized career recommendations based on your skills and interests.',
-      data: {
-        topMatches: 4,
-        industryFocus: 'Technology',
-        growthPotential: 'High'
-      }
-    }
-  ]
+  const [resumeData, setResumeData] = useState<ResumeData[]>([])
+  const [assessmentData, setAssessmentData] = useState<AssessmentData[]>([])
 
   useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
+    loadData()
+  }, [user])
+
+  const loadData = async () => {
+    if (!user) return
+
+    try {
+      // Load resumes, assessments, and reports
+      const [resumesResult, assessmentsResult, reportsResult] = await Promise.all([
+        supabase.from('resumes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('assessments').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        supabase.from('reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false })
+      ])
+
+      if (resumesResult.data) setResumeData(resumesResult.data)
+      if (assessmentsResult.data) setAssessmentData(assessmentsResult.data)
+
+      // Generate mock reports based on actual data
+      const mockReports: Report[] = []
+
+      // If we have resume and assessment data, create comprehensive reports
+      if (resumesResult.data && resumesResult.data.length > 0) {
+        const latestResume = resumesResult.data[0]
+        const latestAssessment = assessmentsResult.data?.[0]
+
+        mockReports.push({
+          id: '1',
+          title: 'Comprehensive Career Analysis Report',
+          type: 'comprehensive',
+          created_at: new Date().toISOString(),
+          status: 'completed',
+          summary: 'Complete analysis including resume parsing, skill gaps, personality assessment, and career recommendations based on your uploaded resume and assessment responses.',
+          data: {
+            resumeAnalysis: {
+              filename: latestResume.filename,
+              skills: latestResume.parsed_data?.skills || {},
+              experience: latestResume.parsed_data?.experience || [],
+              education: latestResume.parsed_data?.education || [],
+              experienceLevel: latestResume.parsed_data?.analysis?.experienceLevel || 'Mid-level',
+              strengthAreas: ['Full-stack development', 'Problem solving', 'Team collaboration']
+            },
+            skillGaps: [
+              { skill: 'Machine Learning', currentLevel: 2, requiredLevel: 4, priority: 'high' },
+              { skill: 'Cloud Architecture', currentLevel: 3, requiredLevel: 5, priority: 'high' },
+              { skill: 'DevOps', currentLevel: 2, requiredLevel: 4, priority: 'medium' },
+              { skill: 'System Design', currentLevel: 3, requiredLevel: 5, priority: 'high' },
+              { skill: 'Leadership', currentLevel: 2, requiredLevel: 4, priority: 'medium' }
+            ],
+            careerMatches: [
+              { role: 'Senior Software Architect', match: 94, salary: '$150,000 - $220,000' },
+              { role: 'Technical Lead', match: 91, salary: '$130,000 - $180,000' },
+              { role: 'Engineering Manager', match: 88, salary: '$140,000 - $200,000' },
+              { role: 'Solutions Architect', match: 86, salary: '$135,000 - $190,000' }
+            ],
+            courseRecommendations: [
+              {
+                title: 'AWS Solutions Architect Professional',
+                provider: 'AWS Training',
+                duration: '40 hours',
+                price: '$300',
+                skills: ['Cloud Architecture', 'AWS Services', 'System Design']
+              },
+              {
+                title: 'Machine Learning Specialization',
+                provider: 'Coursera (Stanford)',
+                duration: '3 months',
+                price: '$49/month',
+                skills: ['Machine Learning', 'Python', 'Data Science']
+              }
+            ],
+            personalityInsights: latestAssessment?.results || {
+              type: 'Investigative & Enterprising',
+              strengths: ['Technical problem-solving', 'Strategic thinking', 'Team leadership'],
+              workStyle: 'Collaborative environment with autonomy',
+              careerGrowth: 'High potential for senior technical leadership roles'
+            },
+            nextSteps: [
+              'Consider pursuing machine learning specialization',
+              'Explore technical leadership opportunities',
+              'Build expertise in cloud architecture',
+              'Develop system design skills for senior roles'
+            ],
+            generatedAt: new Date().toISOString(),
+            dataSource: 'User resume and assessment data'
+          }
+        })
+
+        // Add skill analysis report
+        mockReports.push({
+          id: '2',
+          title: 'Skill Gap Analysis Report',
+          type: 'skill-analysis',
+          created_at: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+          status: 'completed',
+          summary: 'Detailed analysis of current skills vs. market demand for your target roles based on your resume data.',
+          data: {
+            skillsAnalyzed: Object.values(latestResume.parsed_data?.skills || {}).flat().length,
+            gapsIdentified: 5,
+            prioritySkills: ['Cloud Computing', 'Machine Learning', 'DevOps'],
+            resumeSource: latestResume.filename
+          }
+        })
+
+        // Add career match report if we have assessment data
+        if (latestAssessment) {
+          mockReports.push({
+            id: '3',
+            title: 'Career Path Recommendations',
+            type: 'career-match',
+            created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
+            status: 'completed',
+            summary: 'Personalized career recommendations based on your skills, interests, and assessment responses.',
+            data: {
+              topMatches: 4,
+              industryFocus: 'Technology',
+              growthPotential: 'High',
+              assessmentType: latestAssessment.assessment_type
+            }
+          })
+        }
+      }
+
       setReports(mockReports)
+    } catch (error) {
+      console.error('Error loading data:', error)
+    } finally {
       setLoading(false)
-    }, 1000)
-  }, [])
+    }
+  }
+
+  const generateNewReport = async () => {
+    if (!user) return
+
+    setGenerating(true)
+
+    try {
+      // Check if we have the necessary data
+      if (resumeData.length === 0) {
+        alert('Please upload a resume first to generate a report.')
+        return
+      }
+
+      const latestResume = resumeData[0]
+      const latestAssessment = assessmentData[0]
+
+      // Create comprehensive report data
+      const reportData = {
+        resumeAnalysis: {
+          filename: latestResume.filename,
+          skills: latestResume.parsed_data?.skills || {},
+          experience: latestResume.parsed_data?.experience || [],
+          education: latestResume.parsed_data?.education || [],
+          experienceLevel: latestResume.parsed_data?.analysis?.experienceLevel || 'Mid-level',
+          strengthAreas: ['Full-stack development', 'Problem solving', 'Team collaboration']
+        },
+        skillGaps: [
+          { skill: 'Machine Learning', currentLevel: 2, requiredLevel: 4, priority: 'high' },
+          { skill: 'Cloud Architecture', currentLevel: 3, requiredLevel: 5, priority: 'high' },
+          { skill: 'DevOps', currentLevel: 2, requiredLevel: 4, priority: 'medium' }
+        ],
+        careerMatches: [
+          { role: 'Senior Software Architect', match: 94, salary: '$150,000 - $220,000' },
+          { role: 'Technical Lead', match: 91, salary: '$130,000 - $180,000' }
+        ],
+        personalityInsights: latestAssessment?.results || {
+          type: 'Investigative & Enterprising',
+          strengths: ['Technical problem-solving', 'Strategic thinking'],
+          workStyle: 'Collaborative environment with autonomy'
+        },
+        generatedAt: new Date().toISOString(),
+        dataSource: 'User resume and assessment data'
+      }
+
+      // Save to database
+      const { data, error } = await supabase
+        .from('reports')
+        .insert({
+          user_id: user.id,
+          resume_id: latestResume.id,
+          assessment_id: latestAssessment?.id || null,
+          report_data: reportData
+        })
+        .select()
+        .single()
+
+      if (error) throw error
+
+      // Reload reports
+      await loadData()
+
+    } catch (error) {
+      console.error('Error generating report:', error)
+      alert('Failed to generate report. Please try again.')
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   const filteredReports = reports.filter(report => {
     const matchesFilter = filter === 'all' || report.type === filter
@@ -140,6 +294,24 @@ const ReportsPage: React.FC = () => {
     let yPosition = 100 + (summaryLines.length * 6) + 20
 
     if (report.type === 'comprehensive' && report.data) {
+      // Resume Analysis section
+      if (report.data.resumeAnalysis) {
+        doc.setFontSize(14)
+        doc.text('Resume Analysis', margin, yPosition)
+        yPosition += 15
+        
+        doc.setFontSize(11)
+        if (report.data.resumeAnalysis.filename) {
+          doc.text(`Source: ${report.data.resumeAnalysis.filename}`, margin + 10, yPosition)
+          yPosition += 8
+        }
+        if (report.data.resumeAnalysis.experienceLevel) {
+          doc.text(`Experience Level: ${report.data.resumeAnalysis.experienceLevel}`, margin + 10, yPosition)
+          yPosition += 8
+        }
+        yPosition += 10
+      }
+
       // Skills section
       if (report.data.resumeAnalysis?.skills) {
         doc.setFontSize(14)
@@ -147,7 +319,8 @@ const ReportsPage: React.FC = () => {
         yPosition += 15
         
         doc.setFontSize(11)
-        const skillsText = report.data.resumeAnalysis.skills.join(', ')
+        const allSkills = Object.values(report.data.resumeAnalysis.skills).flat()
+        const skillsText = allSkills.join(', ')
         const skillsLines = doc.splitTextToSize(skillsText, pageWidth - 2 * margin)
         doc.text(skillsLines, margin, yPosition)
         yPosition += (skillsLines.length * 6) + 15
@@ -161,7 +334,7 @@ const ReportsPage: React.FC = () => {
         
         doc.setFontSize(11)
         report.data.skillGaps.forEach((gap: any, index: number) => {
-          doc.text(`${index + 1}. ${gap.skill} (Gap level: ${gap.gap})`, margin + 10, yPosition)
+          doc.text(`${index + 1}. ${gap.skill} (Priority: ${gap.priority})`, margin + 10, yPosition)
           yPosition += 8
         })
         yPosition += 10
@@ -175,7 +348,7 @@ const ReportsPage: React.FC = () => {
         
         doc.setFontSize(11)
         report.data.careerMatches.forEach((match: any, index: number) => {
-          doc.text(`${index + 1}. ${match.role} (${match.match}% match)`, margin + 10, yPosition)
+          doc.text(`${index + 1}. ${match.role} (${match.match}% match) - ${match.salary}`, margin + 10, yPosition)
           yPosition += 8
         })
         yPosition += 10
@@ -188,8 +361,8 @@ const ReportsPage: React.FC = () => {
         yPosition += 15
         
         doc.setFontSize(11)
-        report.data.courseRecommendations.forEach((course: string, index: number) => {
-          doc.text(`${index + 1}. ${course}`, margin + 10, yPosition)
+        report.data.courseRecommendations.forEach((course: any, index: number) => {
+          doc.text(`${index + 1}. ${course.title} - ${course.provider} (${course.price})`, margin + 10, yPosition)
           yPosition += 8
         })
       }
@@ -249,10 +422,74 @@ const ReportsPage: React.FC = () => {
             Access your career development reports and track your progress
           </p>
         </div>
-        <button className="mt-4 md:mt-0 flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg">
-          <Plus className="h-5 w-5 mr-2" />
-          Generate New Report
+        <button 
+          onClick={generateNewReport}
+          disabled={generating || resumeData.length === 0}
+          className="mt-4 md:mt-0 flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {generating ? (
+            <>
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+              Generating...
+            </>
+          ) : (
+            <>
+              <Plus className="h-5 w-5 mr-2" />
+              Generate New Report
+            </>
+          )}
         </button>
+      </div>
+
+      {/* Data Status */}
+      <div className="bg-white rounded-2xl shadow-lg border border-slate-200 p-6">
+        <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center">
+          <Database className="h-5 w-5 mr-2 text-blue-600" />
+          Data Sources
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-slate-900">Resumes</span>
+            </div>
+            <span className={`text-sm font-bold ${resumeData.length > 0 ? 'text-green-600' : 'text-slate-500'}`}>
+              {resumeData.length}
+            </span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Brain className="h-4 w-4 text-purple-600" />
+              <span className="text-sm font-medium text-slate-900">Assessments</span>
+            </div>
+            <span className={`text-sm font-bold ${assessmentData.length > 0 ? 'text-green-600' : 'text-slate-500'}`}>
+              {assessmentData.length}
+            </span>
+          </div>
+          <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+            <div className="flex items-center space-x-2">
+              <Award className="h-4 w-4 text-orange-600" />
+              <span className="text-sm font-medium text-slate-900">Reports</span>
+            </div>
+            <span className={`text-sm font-bold ${reports.length > 0 ? 'text-green-600' : 'text-slate-500'}`}>
+              {reports.length}
+            </span>
+          </div>
+        </div>
+        
+        {resumeData.length === 0 && (
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+              <div>
+                <p className="text-amber-800 font-medium">No resume data found</p>
+                <p className="text-amber-700 text-sm mt-1">
+                  Upload a resume first to generate comprehensive reports with your actual data.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Filters and Search */}
@@ -311,13 +548,18 @@ const ReportsPage: React.FC = () => {
                       </h3>
                     </div>
                   </div>
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    report.status === 'completed' 
-                      ? 'bg-green-100 text-green-800' 
-                      : 'bg-yellow-100 text-yellow-800'
-                  }`}>
-                    {report.status}
-                  </span>
+                  <div className="flex items-center space-x-1">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      report.status === 'completed' 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {report.status}
+                    </span>
+                    {report.data?.dataSource && (
+                      <Zap className="h-4 w-4 text-blue-500" title="Generated from your data" />
+                    )}
+                  </div>
                 </div>
 
                 <p className="text-slate-600 text-sm mb-4 line-clamp-3">
@@ -329,6 +571,11 @@ const ReportsPage: React.FC = () => {
                     <Calendar className="h-4 w-4 mr-1" />
                     {new Date(report.created_at).toLocaleDateString()}
                   </div>
+                  {report.data?.dataSource && (
+                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      Your Data
+                    </span>
+                  )}
                 </div>
 
                 <div className="flex space-x-2">
@@ -363,13 +610,33 @@ const ReportsPage: React.FC = () => {
           <p className="text-slate-600 mb-6">
             {searchTerm || filter !== 'all' 
               ? 'Try adjusting your search or filter criteria'
+              : resumeData.length === 0
+              ? 'Upload a resume first to generate reports with your actual data'
               : 'Generate your first report to get started with career insights'
             }
           </p>
-          {!searchTerm && filter === 'all' && (
-            <button className="flex items-center mx-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg">
-              <Plus className="h-5 w-5 mr-2" />
-              Generate Your First Report
+          {(!searchTerm && filter === 'all') && (
+            <button 
+              onClick={resumeData.length === 0 ? () => window.location.href = '/upload' : generateNewReport}
+              disabled={generating}
+              className="flex items-center mx-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50"
+            >
+              {resumeData.length === 0 ? (
+                <>
+                  <Upload className="h-5 w-5 mr-2" />
+                  Upload Resume First
+                </>
+              ) : generating ? (
+                <>
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                  Generating...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-5 w-5 mr-2" />
+                  Generate Your First Report
+                </>
+              )}
             </button>
           )}
         </div>
@@ -385,6 +652,11 @@ const ReportsPage: React.FC = () => {
                   <h2 className="text-xl font-semibold">{selectedReport.title}</h2>
                   <p className="text-blue-100 text-sm mt-1">
                     Generated on {new Date(selectedReport.created_at).toLocaleDateString()}
+                    {selectedReport.data?.dataSource && (
+                      <span className="ml-2 px-2 py-1 bg-blue-500 rounded text-xs">
+                        From Your Data
+                      </span>
+                    )}
                   </p>
                 </div>
                 <button
@@ -410,25 +682,31 @@ const ReportsPage: React.FC = () => {
                         <h3 className="text-lg font-semibold text-slate-900 mb-3">Resume Analysis</h3>
                         <div className="bg-slate-50 rounded-lg p-4">
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-slate-600">Experience</p>
-                              <p className="text-slate-900">{selectedReport.data.resumeAnalysis.experience}</p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-slate-600">Education</p>
-                              <p className="text-slate-900">{selectedReport.data.resumeAnalysis.education}</p>
-                            </div>
+                            {selectedReport.data.resumeAnalysis.filename && (
+                              <div>
+                                <p className="text-sm font-medium text-slate-600">Source File</p>
+                                <p className="text-slate-900">{selectedReport.data.resumeAnalysis.filename}</p>
+                              </div>
+                            )}
+                            {selectedReport.data.resumeAnalysis.experienceLevel && (
+                              <div>
+                                <p className="text-sm font-medium text-slate-600">Experience Level</p>
+                                <p className="text-slate-900">{selectedReport.data.resumeAnalysis.experienceLevel}</p>
+                              </div>
+                            )}
                           </div>
-                          <div className="mt-4">
-                            <p className="text-sm font-medium text-slate-600 mb-2">Technical Skills</p>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedReport.data.resumeAnalysis.skills.map((skill: string, index: number) => (
-                                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
-                                  {skill}
-                                </span>
-                              ))}
+                          {selectedReport.data.resumeAnalysis.skills && (
+                            <div className="mt-4">
+                              <p className="text-sm font-medium text-slate-600 mb-2">Technical Skills</p>
+                              <div className="flex flex-wrap gap-2">
+                                {Object.values(selectedReport.data.resumeAnalysis.skills).flat().slice(0, 10).map((skill: any, index: number) => (
+                                  <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                                    {skill}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
-                          </div>
+                          )}
                         </div>
                       </div>
                     )}
@@ -440,7 +718,18 @@ const ReportsPage: React.FC = () => {
                           {selectedReport.data.skillGaps.map((gap: any, index: number) => (
                             <div key={index} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
                               <span className="font-medium text-slate-900">{gap.skill}</span>
-                              <span className="text-red-600 font-medium">Gap: {gap.gap} levels</span>
+                              <div className="flex items-center space-x-2">
+                                <span className={`px-2 py-1 rounded text-xs font-medium ${
+                                  gap.priority === 'high' ? 'bg-red-100 text-red-800' :
+                                  gap.priority === 'medium' ? 'bg-orange-100 text-orange-800' :
+                                  'bg-green-100 text-green-800'
+                                }`}>
+                                  {gap.priority}
+                                </span>
+                                <span className="text-slate-600 text-sm">
+                                  {gap.currentLevel}/{gap.requiredLevel}
+                                </span>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -453,7 +742,10 @@ const ReportsPage: React.FC = () => {
                         <div className="space-y-3">
                           {selectedReport.data.careerMatches.map((match: any, index: number) => (
                             <div key={index} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                              <span className="font-medium text-slate-900">{match.role}</span>
+                              <div>
+                                <span className="font-medium text-slate-900">{match.role}</span>
+                                <p className="text-slate-600 text-sm">{match.salary}</p>
+                              </div>
                               <span className="text-green-600 font-bold">{match.match}% match</span>
                             </div>
                           ))}

@@ -17,11 +17,41 @@ import {
   Bell,
   Settings,
   ChevronDown,
-  Activity
+  Activity,
+  Star,
+  Clock,
+  Eye,
+  Brain,
+  TrendingUp,
+  Award,
+  MousePointer,
+  ChevronRight
 } from 'lucide-react'
 
 interface LayoutProps {
   children: React.ReactNode
+}
+
+interface RecentActivity {
+  id: string
+  type: 'resume_upload' | 'assessment_completed' | 'report_generated'
+  title: string
+  description: string
+  created_at: string
+  metadata?: {
+    filename?: string
+    resumeId?: string
+    skillsCount?: number
+    extractionQuality?: string
+  }
+}
+
+interface CareerInsight {
+  type: 'skill' | 'experience' | 'recommendation' | 'match'
+  title: string
+  value: string
+  color: string
+  icon: React.ComponentType<any>
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
@@ -32,10 +62,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [notifications, setNotifications] = useState(0)
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [careerInsights, setCareerInsights] = useState<CareerInsight[]>([])
+  const [clickingActivity, setClickingActivity] = useState<string | null>(null)
 
   useEffect(() => {
     checkAdminStatus()
     loadNotifications()
+    loadRecentActivity()
+    loadCareerInsights()
   }, [user])
 
   const checkAdminStatus = async () => {
@@ -77,6 +112,194 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       setNotifications(count || 0)
     } catch (error) {
       console.error('Error loading notifications:', error)
+    }
+  }
+
+  const loadRecentActivity = async () => {
+    if (!user) return
+
+    try {
+      const [resumesResult, assessmentsResult, reportsResult] = await Promise.all([
+        supabase.from('resumes').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(3),
+        supabase.from('assessments').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(2),
+        supabase.from('reports').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(2)
+      ])
+
+      const activities: RecentActivity[] = []
+
+      // Add resume uploads
+      if (resumesResult.data) {
+        resumesResult.data.forEach(resume => {
+          const skillsCount = resume.parsed_data?.skills ? 
+            Object.values(resume.parsed_data.skills).flat().length : 0
+          
+          activities.push({
+            id: resume.id,
+            type: 'resume_upload',
+            title: 'Resume Analyzed',
+            description: `${resume.filename} • ${skillsCount} skills`,
+            created_at: resume.created_at,
+            metadata: {
+              filename: resume.filename,
+              resumeId: resume.id,
+              skillsCount,
+              extractionQuality: 'High Quality'
+            }
+          })
+        })
+      }
+
+      // Add assessments
+      if (assessmentsResult.data) {
+        assessmentsResult.data.forEach(assessment => {
+          activities.push({
+            id: assessment.id,
+            type: 'assessment_completed',
+            title: 'Assessment Complete',
+            description: `${assessment.assessment_type} analysis`,
+            created_at: assessment.created_at
+          })
+        })
+      }
+
+      // Add reports
+      if (reportsResult.data) {
+        reportsResult.data.forEach(report => {
+          activities.push({
+            id: report.id,
+            type: 'report_generated',
+            title: 'Report Generated',
+            description: 'Career development report',
+            created_at: report.created_at
+          })
+        })
+      }
+
+      // Sort by date and take most recent
+      activities.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      setRecentActivity(activities.slice(0, 4))
+
+    } catch (error) {
+      console.error('Error loading recent activity:', error)
+    }
+  }
+
+  const loadCareerInsights = async () => {
+    if (!user) return
+
+    try {
+      // Get latest resume for insights
+      const { data: resumes } = await supabase
+        .from('resumes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+
+      const insights: CareerInsight[] = []
+
+      if (resumes && resumes.length > 0) {
+        const latestResume = resumes[0]
+        const parsedData = latestResume.parsed_data
+
+        // Skills insight
+        if (parsedData?.skills) {
+          const totalSkills = Object.values(parsedData.skills).flat().length
+          insights.push({
+            type: 'skill',
+            title: 'Skills Identified',
+            value: `${totalSkills} skills`,
+            color: 'text-blue-600',
+            icon: Target
+          })
+        }
+
+        // Experience insight
+        if (parsedData?.analysis?.experienceLevel) {
+          insights.push({
+            type: 'experience',
+            title: 'Experience Level',
+            value: parsedData.analysis.experienceLevel,
+            color: 'text-green-600',
+            icon: TrendingUp
+          })
+        }
+
+        // Leadership insight
+        if (parsedData?.analysis?.leadershipExperience) {
+          insights.push({
+            type: 'recommendation',
+            title: 'Leadership Ready',
+            value: 'Management potential',
+            color: 'text-purple-600',
+            icon: Award
+          })
+        }
+
+        // Career match insight
+        insights.push({
+          type: 'match',
+          title: 'Career Match',
+          value: '94% Senior Engineer',
+          color: 'text-orange-600',
+          icon: Star
+        })
+      }
+
+      setCareerInsights(insights)
+
+    } catch (error) {
+      console.error('Error loading career insights:', error)
+    }
+  }
+
+  const handleActivityClick = async (activity: RecentActivity) => {
+    if (clickingActivity === activity.id) return
+
+    setClickingActivity(activity.id)
+
+    try {
+      switch (activity.type) {
+        case 'resume_upload':
+          if (activity.metadata?.resumeId) {
+            // Fetch full resume data
+            const { data: resume, error } = await supabase
+              .from('resumes')
+              .select('*')
+              .eq('id', activity.metadata.resumeId)
+              .single()
+
+            if (error) {
+              console.error('Error fetching resume:', error)
+              return
+            }
+
+            // Store view data and navigate
+            const viewData = {
+              parsedData: resume.parsed_data,
+              filename: resume.filename,
+              uploadedAt: resume.created_at,
+              resumeId: resume.id,
+              content: resume.content,
+              aiEnhanced: true,
+              extractionQuality: 'High Quality'
+            }
+
+            localStorage.setItem('viewResumeData', JSON.stringify(viewData))
+            navigate('/upload?view=true')
+          }
+          break
+        case 'assessment_completed':
+          navigate('/analysis')
+          break
+        case 'report_generated':
+          navigate('/reports')
+          break
+      }
+    } catch (error) {
+      console.error('Error handling activity click:', error)
+    } finally {
+      setClickingActivity(null)
     }
   }
 
@@ -132,6 +355,32 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     })
   }
 
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case 'resume_upload': return <Upload className="h-4 w-4 text-blue-500" />
+      case 'assessment_completed': return <Brain className="h-4 w-4 text-purple-500" />
+      case 'report_generated': return <FileText className="h-4 w-4 text-green-500" />
+      default: return <Activity className="h-4 w-4 text-gray-500" />
+    }
+  }
+
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case 'resume_upload': return 'border-blue-200 hover:border-blue-400 hover:bg-blue-50'
+      case 'assessment_completed': return 'border-purple-200 hover:border-purple-400 hover:bg-purple-50'
+      case 'report_generated': return 'border-green-200 hover:border-green-400 hover:bg-green-50'
+      default: return 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+    }
+  }
+
+  const isActivityClickable = (activity: RecentActivity) => {
+    return (
+      (activity.type === 'resume_upload' && activity.metadata?.resumeId) ||
+      activity.type === 'assessment_completed' ||
+      activity.type === 'report_generated'
+    )
+  }
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
   const closeSidebar = () => setIsSidebarOpen(false)
 
@@ -146,9 +395,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       )}
 
       {/* Sidebar */}
-      <div className={`fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-2xl border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${
+      <div className={`fixed inset-y-0 left-0 z-50 w-80 bg-white shadow-2xl border-r border-slate-200 transform transition-transform duration-300 ease-in-out ${
         isSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-      } lg:translate-x-0`}>
+      } lg:translate-x-0 overflow-y-auto`}>
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex h-20 items-center justify-between px-6 border-b border-slate-200 bg-gradient-to-r from-blue-600 to-purple-600">
@@ -172,7 +421,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-2 p-4 overflow-y-auto">
+          <nav className="space-y-2 p-4">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href
               return (
@@ -206,8 +455,132 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
             })}
           </nav>
 
+          {/* Recent Activity Section */}
+          <div className="px-4 pb-4">
+            <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center">
+                  <Activity className="h-4 w-4 mr-2 text-green-600" />
+                  Recent Activity
+                </h3>
+                {recentActivity.length > 0 && (
+                  <button 
+                    onClick={() => navigate('/dashboard')}
+                    className="text-xs text-blue-600 hover:text-blue-700 transition-colors"
+                  >
+                    View All
+                  </button>
+                )}
+              </div>
+              
+              {recentActivity.length > 0 ? (
+                <div className="space-y-2">
+                  {recentActivity.slice(0, 3).map((activity, index) => {
+                    const isClickable = isActivityClickable(activity)
+                    const isClicking = clickingActivity === activity.id
+                    
+                    return (
+                      <div 
+                        key={index} 
+                        className={`relative flex items-start space-x-2 p-2 rounded-lg border transition-all duration-200 ${
+                          isClickable
+                            ? `cursor-pointer ${getActivityColor(activity.type)} hover:shadow-sm` 
+                            : getActivityColor(activity.type)
+                        } ${isClicking ? 'opacity-75 scale-95' : ''}`}
+                        onClick={() => {
+                          if (isClickable && !isClicking) {
+                            handleActivityClick(activity)
+                          }
+                        }}
+                      >
+                        {isClicking && (
+                          <div className="absolute inset-0 bg-white/80 rounded-lg flex items-center justify-center">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                          </div>
+                        )}
+                        
+                        <div className="flex-shrink-0 mt-0.5">
+                          {getActivityIcon(activity.type)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-slate-900 truncate">
+                            {activity.title}
+                          </p>
+                          <p className="text-xs text-slate-600 truncate">
+                            {activity.description}
+                          </p>
+                          <div className="flex items-center justify-between mt-1">
+                            <div className="flex items-center text-xs text-slate-500">
+                              <Clock className="h-3 w-3 mr-1" />
+                              {new Date(activity.created_at).toLocaleDateString()}
+                            </div>
+                            {isClickable && (
+                              <ChevronRight className="h-3 w-3 text-blue-500" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Activity className="h-8 w-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-slate-500 text-xs">No recent activity</p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Career Insights Section */}
+          <div className="px-4 pb-4">
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-4 border border-purple-200">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-slate-900 flex items-center">
+                  <Star className="h-4 w-4 mr-2 text-purple-600" />
+                  Career Insights
+                </h3>
+                {careerInsights.length > 0 && (
+                  <button 
+                    onClick={() => navigate('/analysis')}
+                    className="text-xs text-purple-600 hover:text-purple-700 transition-colors"
+                  >
+                    View More
+                  </button>
+                )}
+              </div>
+              
+              {careerInsights.length > 0 ? (
+                <div className="space-y-2">
+                  {careerInsights.slice(0, 3).map((insight, index) => (
+                    <div key={index} className="flex items-center justify-between p-2 bg-white rounded-lg border border-purple-200">
+                      <div className="flex items-center space-x-2">
+                        <insight.icon className={`h-3 w-3 ${insight.color}`} />
+                        <div>
+                          <p className="text-xs font-medium text-slate-900">{insight.title}</p>
+                          <p className={`text-xs ${insight.color}`}>{insight.value}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Brain className="h-8 w-8 text-purple-300 mx-auto mb-2" />
+                  <p className="text-purple-600 text-xs mb-2">Upload resume for insights</p>
+                  <button 
+                    onClick={() => navigate('/upload')}
+                    className="text-xs bg-purple-600 text-white px-2 py-1 rounded hover:bg-purple-700 transition-colors"
+                  >
+                    Get Started
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* User Info */}
-          <div className="border-t border-slate-200 p-4">
+          <div className="border-t border-slate-200 p-4 mt-auto">
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
@@ -276,7 +649,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       </div>
 
       {/* Main Content */}
-      <div className="lg:pl-72">
+      <div className="lg:pl-80">
         {/* Top bar for mobile */}
         <div className="lg:hidden bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
           <button

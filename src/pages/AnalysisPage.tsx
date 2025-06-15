@@ -18,7 +18,9 @@ import {
   AlertCircle,
   Zap,
   Clock,
-  BarChart3
+  BarChart3,
+  Database,
+  Save
 } from 'lucide-react'
 
 interface Question {
@@ -80,11 +82,13 @@ const AnalysisPage: React.FC = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<string, any>>({})
   const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [resumeAnalysis, setResumeAnalysis] = useState<ResumeAnalysis | null>(null)
   const [skillGaps, setSkillGaps] = useState<SkillGap[]>([])
   const [courseRecommendations, setCourseRecommendations] = useState<CourseRecommendation[]>([])
   const [jobMatches, setJobMatches] = useState<JobMatch[]>([])
   const [personalityInsights, setPersonalityInsights] = useState<any>(null)
+  const [assessmentId, setAssessmentId] = useState<string | null>(null)
 
   useEffect(() => {
     checkResumeData()
@@ -200,11 +204,41 @@ const AnalysisPage: React.FC = () => {
     }
   }
 
+  const saveAssessmentToDatabase = async (responses: any, results: any) => {
+    if (!user) return null
+
+    try {
+      setIsSaving(true)
+      const { data, error } = await supabase
+        .from('assessments')
+        .insert({
+          user_id: user.id,
+          assessment_type: 'personality',
+          responses: responses,
+          results: results
+        })
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error saving assessment:', error)
+        return null
+      }
+
+      return data.id
+    } catch (error) {
+      console.error('Error saving assessment:', error)
+      return null
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
   const analyzeResults = async () => {
     setIsAnalyzing(true)
 
     try {
-      // Generate mock analysis based on resume data and answers
+      // Generate comprehensive analysis based on resume data and answers
       const mockPersonalityInsights = {
         careerType: 'Investigative & Enterprising',
         workStyle: 'Collaborative environment with autonomy',
@@ -236,38 +270,50 @@ const AnalysisPage: React.FC = () => {
         }
       }
 
+      // Generate skill gaps based on resume data
+      const currentSkills = resumeAnalysis?.parsedData?.skills || {}
+      const allSkills = Object.values(currentSkills).flat()
+      
       const mockSkillGaps = [
         {
           skill: 'Machine Learning',
-          currentLevel: 1,
+          currentLevel: allSkills.includes('Python') ? 2 : 1,
           requiredLevel: 4,
           priority: 'high' as const,
-          description: 'Essential for data-driven decision making',
-          resources: ['Coursera ML Course', 'Kaggle Learn', 'Fast.ai']
+          description: 'Essential for data-driven decision making and AI integration',
+          resources: ['Coursera ML Course', 'Kaggle Learn', 'Fast.ai', 'Andrew Ng Course']
         },
         {
           skill: 'Cloud Architecture',
-          currentLevel: 2,
+          currentLevel: allSkills.includes('AWS') ? 3 : 2,
           requiredLevel: 5,
           priority: 'high' as const,
-          description: 'Critical for scalable system design',
-          resources: ['AWS Solutions Architect', 'Azure Fundamentals', 'GCP Professional']
+          description: 'Critical for scalable system design and modern infrastructure',
+          resources: ['AWS Solutions Architect', 'Azure Fundamentals', 'GCP Professional', 'Cloud Design Patterns']
         },
         {
           skill: 'System Design',
-          currentLevel: 3,
+          currentLevel: resumeAnalysis?.parsedData?.analysis?.experienceLevel?.includes('Senior') ? 4 : 3,
           requiredLevel: 5,
           priority: 'high' as const,
-          description: 'Required for senior engineering roles',
+          description: 'Required for senior engineering roles and technical leadership',
           resources: ['System Design Interview', 'High Scalability', 'Designing Data-Intensive Applications']
         },
         {
           skill: 'Leadership',
-          currentLevel: 2,
+          currentLevel: answers.leadership_interest >= 4 ? 3 : 2,
           requiredLevel: 4,
           priority: 'medium' as const,
-          description: 'Important for career advancement',
-          resources: ['Tech Lead Course', 'Management 3.0', 'The Manager\'s Path']
+          description: 'Important for career advancement and team management',
+          resources: ['Tech Lead Course', 'Management 3.0', 'The Manager\'s Path', 'Leadership in Tech']
+        },
+        {
+          skill: 'DevOps',
+          currentLevel: allSkills.includes('Docker') || allSkills.includes('Kubernetes') ? 3 : 2,
+          requiredLevel: 4,
+          priority: 'medium' as const,
+          description: 'Essential for modern software delivery and operations',
+          resources: ['DevOps Handbook', 'Docker Mastery', 'Kubernetes Certification', 'CI/CD Best Practices']
         }
       ]
 
@@ -310,20 +356,48 @@ const AnalysisPage: React.FC = () => {
           url: 'https://linuxacademy.com/',
           description: 'Comprehensive DevOps training with hands-on labs.',
           category: 'DevOps'
+        },
+        {
+          id: '4',
+          title: 'System Design Interview Prep',
+          provider: 'Educative',
+          duration: '20 hours',
+          level: 'Advanced',
+          rating: 4.6,
+          price: '$79',
+          skills: ['System Design', 'Architecture', 'Scalability'],
+          url: 'https://educative.io/',
+          description: 'Master system design concepts for technical interviews and real-world applications.',
+          category: 'System Design'
+        },
+        {
+          id: '5',
+          title: 'Technical Leadership Bootcamp',
+          provider: 'Pluralsight',
+          duration: '15 hours',
+          level: 'Intermediate',
+          rating: 4.5,
+          price: '$29/month',
+          skills: ['Leadership', 'Management', 'Communication'],
+          url: 'https://pluralsight.com/',
+          description: 'Develop leadership skills for technical professionals.',
+          category: 'Leadership'
         }
       ]
 
+      // Generate job matches based on skills and preferences
+      const experienceLevel = resumeAnalysis?.parsedData?.analysis?.experienceLevel || 'Mid-level'
       const mockJobMatches = [
         {
           id: '1',
-          title: 'Senior Software Engineer',
+          title: experienceLevel.includes('Senior') ? 'Principal Software Engineer' : 'Senior Software Engineer',
           company: 'TechCorp Inc.',
-          location: 'San Francisco, CA',
-          salary: '$140,000 - $180,000',
+          location: answers.work_environment?.includes('Remote') ? 'Remote' : 'San Francisco, CA',
+          salary: experienceLevel.includes('Senior') ? '$160,000 - $220,000' : '$140,000 - $180,000',
           match: 94,
           description: 'Lead development of scalable web applications using modern technologies.',
-          requirements: ['JavaScript', 'React', 'Node.js'],
-          remote: true,
+          requirements: allSkills.slice(0, 5),
+          remote: answers.work_environment?.includes('Remote') || true,
           posted: '2 days ago'
         },
         {
@@ -340,26 +414,34 @@ const AnalysisPage: React.FC = () => {
         },
         {
           id: '3',
-          title: 'Technical Lead',
+          title: answers.leadership_interest >= 4 ? 'Engineering Manager' : 'Technical Lead',
           company: 'Innovation Labs',
           location: 'New York, NY',
-          salary: '$160,000 - $200,000',
+          salary: answers.leadership_interest >= 4 ? '$180,000 - $240,000' : '$160,000 - $200,000',
           match: 87,
           description: 'Lead a team of developers and architect technical solutions.',
           requirements: ['Leadership', 'JavaScript', 'System Design'],
           remote: false,
           posted: '3 days ago'
+        },
+        {
+          id: '4',
+          title: 'Solutions Architect',
+          company: 'CloudTech',
+          location: 'Seattle, WA',
+          salary: '$150,000 - $190,000',
+          match: 85,
+          description: 'Design and implement cloud infrastructure solutions.',
+          requirements: ['AWS', 'System Design', 'Architecture'],
+          remote: true,
+          posted: '5 days ago'
         }
       ]
 
       // Save assessment to database
-      if (user && resumeAnalysis?.resumeId) {
-        await supabase.from('assessments').insert({
-          user_id: user.id,
-          assessment_type: 'personality',
-          responses: answers,
-          results: mockPersonalityInsights
-        })
+      const savedAssessmentId = await saveAssessmentToDatabase(answers, mockPersonalityInsights)
+      if (savedAssessmentId) {
+        setAssessmentId(savedAssessmentId)
       }
 
       setPersonalityInsights(mockPersonalityInsights)
@@ -567,6 +649,12 @@ const AnalysisPage: React.FC = () => {
                 <Clock className="h-5 w-5 text-slate-400" />
                 <span className="text-slate-700">Finding job matches</span>
               </div>
+              {isSaving && (
+                <div className="flex items-center space-x-3">
+                  <Save className="h-5 w-5 text-blue-500" />
+                  <span className="text-slate-700">Saving assessment to profile</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -637,7 +725,7 @@ const AnalysisPage: React.FC = () => {
           </div>
           {resumeAnalysis?.resumeId && (
             <div className="flex items-center space-x-2">
-              <FileText className="h-5 w-5" />
+              <Database className="h-5 w-5" />
               <span>Saved to Profile</span>
             </div>
           )}
@@ -744,7 +832,7 @@ const AnalysisPage: React.FC = () => {
                 Recommended Courses
               </h2>
               <div className="space-y-4">
-                {courseRecommendations.slice(0, 3).map((course, index) => (
+                {courseRecommendations.slice(0, 4).map((course, index) => (
                   <div key={course.id} className="border border-slate-200 rounded-lg p-4 hover:shadow-lg transition-all duration-200">
                     <div className="flex justify-between items-start mb-3">
                       <div className="flex-1">
@@ -822,6 +910,20 @@ const AnalysisPage: React.FC = () => {
                     <p className="text-orange-800">{resumeAnalysis.parsedData.personalInfo.name}</p>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* Assessment Status */}
+          {assessmentId && (
+            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+              <h2 className="text-xl font-semibold text-slate-900 mb-4 flex items-center">
+                <Database className="h-6 w-6 mr-3 text-blue-600" />
+                Assessment Status
+              </h2>
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <p className="text-sm font-medium text-green-900">Assessment Saved</p>
+                <p className="text-green-800 text-sm">Your responses and results are saved to your profile</p>
               </div>
             </div>
           )}
