@@ -1,3 +1,33 @@
 {
-  "template": "bolt-vite-react-ts"
+  "rules": {
+    "backend_framework": {
+      "required": "express",
+      "prohibited": ["fastify", "koa", "hapi", "nestjs", "nextjs-api"],
+      "enforcement": "mandatory",
+      "module_system": "commonjs"
+    },
+    "server_configuration": {
+      "protocol": "http",
+      "port": 3001,
+      "ssl_enabled": false,
+      "cors_required": true
+    },
+    "file_structure": {
+      "server_directory": "server/",
+      "main_file": "server/server.js",
+      "package_file": "server/package.json"
+    },
+    "validation": {
+      "health_endpoint": "/api/health",
+      "upload_endpoint": "/api/upload-resume",
+      "system_endpoint": "/api/validate/system"
+    }
+  },
+  "enforcement": {
+    "level": "strict",
+    "auto_check": true,
+    "violation_action": "reject_and_rewrite"
+  },
+  "version": "1.0",
+  "last_updated": "2024-12-12"
 }
