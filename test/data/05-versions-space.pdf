@@ -30,23 +30,13 @@ endobj
 
 4 0 obj
 <<
-/Length 200
+/Length 44
 >>
 stream
 BT
 /F1 12 Tf
-50 750 Td
-(Test Resume - Version Space) Tj
-0 -20 Td
-(John Doe) Tj
-0 -20 Td
-(Software Engineer) Tj
-0 -20 Td
-(john.doe@email.com) Tj
-0 -20 Td
-(Skills: JavaScript, React, Node.js, Python) Tj
-0 -20 Td
-(Experience: 5+ years in software development) Tj
+72 720 Td
+(Test PDF Document) Tj
 ET
 endstream
 endobj
@@ -62,16 +52,16 @@ endobj
 xref
 0 6
 0000000000 65535 f 
-0000000010 00000 n 
-0000000053 00000 n 
-0000000100 00000 n 
-0000000250 00000 n 
-0000000500 00000 n 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000274 00000 n 
+0000000370 00000 n 
 trailer
 <<
 /Size 6
 /Root 1 0 R
 >>
 startxref
-580
+467
 %%EOF
