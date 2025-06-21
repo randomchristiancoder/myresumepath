@@ -127,7 +127,7 @@ const AuthPage: React.FC = () => {
                   <BrainCircuit className="h-8 w-8 text-black" aria-hidden="true" />
                 </div>
                 <div className="text-left">
-                  <span className="text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
+                  <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-300 bg-clip-text text-transparent">
                     My Resume Path
                   </span>
                   <p className="text-xs text-gray-400">AI-Powered Career Platform</p>
@@ -138,10 +138,10 @@ const AuthPage: React.FC = () => {
               </div>
             </div>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-4">
+          <h1 className="text-2xl sm:text-3xl font-bold text-white mb-4">
             {isSignUp ? 'Create your account' : 'Welcome back'}
           </h1>
-          <p className="mt-2 text-gray-300 text-wrap">
+          <p className="mt-2 text-sm sm:text-base text-gray-300 text-wrap">
             {isSignUp 
               ? 'Start your journey to career success with AI-powered insights' 
               : 'Sign in to continue your career development journey'
@@ -156,13 +156,13 @@ const AuthPage: React.FC = () => {
               <AlertCircle className="h-5 w-5 text-orange-400 mt-0.5 flex-shrink-0" aria-hidden="true" />
               <div className="flex-1">
                 <h3 className="text-sm font-medium text-white">Demo Account Available</h3>
-                <p className="text-sm text-gray-300 mt-1 text-wrap">
+                <p className="text-xs sm:text-sm text-gray-300 mt-1 text-wrap">
                   Try the platform with pre-loaded sample data and full admin access.
                 </p>
                 <button
                   type="button"
                   onClick={fillAdminCredentials}
-                  className="mt-2 text-sm font-medium text-orange-400 hover:text-orange-300 underline transition-colors interactive"
+                  className="mt-2 text-xs sm:text-sm font-medium text-orange-400 hover:text-orange-300 underline transition-colors interactive"
                   aria-label="Fill in demo account credentials"
                 >
                   Use demo credentials →
@@ -173,7 +173,7 @@ const AuthPage: React.FC = () => {
         )}
 
         {/* Form with Enhanced Accessibility */}
-        <div className="bg-gray-800 p-8 rounded-2xl shadow-2xl border border-gray-700 card-hover">
+        <div className="bg-gray-800 p-6 sm:p-8 rounded-2xl shadow-2xl border border-gray-700 card-hover">
           <form className="space-y-6" onSubmit={handleSubmit} id="main-form" role="main">
             <h2 className="sr-only">{isSignUp ? 'Create Account Form' : 'Sign In Form'}</h2>
             
@@ -181,7 +181,7 @@ const AuthPage: React.FC = () => {
               <div className="status-error" role="alert" aria-live="polite">
                 <div className="flex items-start space-x-2">
                   <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                  <div className="text-wrap">{error}</div>
+                  <div className="text-wrap text-sm">{error}</div>
                 </div>
               </div>
             )}
@@ -190,13 +190,13 @@ const AuthPage: React.FC = () => {
               <div className="status-success" role="alert" aria-live="polite">
                 <div className="flex items-start space-x-2">
                   <CheckCircle2 className="h-4 w-4 mt-0.5 flex-shrink-0" aria-hidden="true" />
-                  <div className="text-wrap">{success}</div>
+                  <div className="text-wrap text-sm">{success}</div>
                 </div>
               </div>
             )}
 
             <div className="form-group">
-              <label htmlFor="email" className="form-label">
+              <label htmlFor="email" className="form-label text-sm">
                 Email address
               </label>
               <div className="relative">
@@ -211,7 +211,7 @@ const AuthPage: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="form-input pl-10"
+                  className="form-input pl-10 text-sm"
                   placeholder="Enter your email"
                   aria-describedby={error && error.includes('email') ? 'email-error' : undefined}
                 />
@@ -219,7 +219,7 @@ const AuthPage: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label htmlFor="password" className="form-label">
+              <label htmlFor="password" className="form-label text-sm">
                 Password
               </label>
               <div className="relative">
@@ -234,7 +234,7 @@ const AuthPage: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="form-input pl-10 pr-10"
+                  className="form-input pl-10 pr-10 text-sm"
                   placeholder="Enter your password"
                   aria-describedby={isSignUp && password.length > 0 ? 'password-strength' : undefined}
                 />
@@ -274,7 +274,7 @@ const AuthPage: React.FC = () => {
 
             {isSignUp && (
               <div className="form-group">
-                <label htmlFor="confirmPassword" className="form-label">
+                <label htmlFor="confirmPassword" className="form-label text-sm">
                   Confirm Password
                 </label>
                 <div className="relative">
@@ -289,7 +289,7 @@ const AuthPage: React.FC = () => {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="form-input pl-10 pr-10"
+                    className="form-input pl-10 pr-10 text-sm"
                     placeholder="Confirm your password"
                     aria-describedby={password !== confirmPassword && confirmPassword.length > 0 ? 'password-match-error' : undefined}
                   />
@@ -307,7 +307,7 @@ const AuthPage: React.FC = () => {
                   </button>
                 </div>
                 {password !== confirmPassword && confirmPassword.length > 0 && (
-                  <p id="password-match-error" className="form-error" role="alert">
+                  <p id="password-match-error" className="form-error text-xs" role="alert">
                     Passwords do not match
                   </p>
                 )}
@@ -364,10 +364,10 @@ const AuthPage: React.FC = () => {
 
         {/* Features preview with Enhanced Accessibility */}
         <div className="bg-gray-800 rounded-xl shadow-lg border border-gray-700 p-6 card-hover">
-          <h3 className="text-lg font-semibold text-white mb-4 text-center">
+          <h3 className="text-base sm:text-lg font-semibold text-white mb-4 text-center">
             What you'll get access to:
           </h3>
-          <div className="grid grid-cols-2 gap-4 text-sm" role="list" aria-label="Platform features">
+          <div className="grid grid-cols-2 gap-4 text-xs sm:text-sm" role="list" aria-label="Platform features">
             <div className="flex items-center space-x-2" role="listitem">
               <CheckCircle2 className="h-4 w-4 text-green-400" aria-hidden="true" />
               <span className="text-gray-300 text-safe">AI Resume Analysis</span>
