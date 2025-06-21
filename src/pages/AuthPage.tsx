@@ -200,7 +200,7 @@ const AuthPage: React.FC = () => {
                 Email address
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-gray-400" aria-hidden="true" />
                 </div>
                 <input
@@ -211,7 +211,7 @@ const AuthPage: React.FC = () => {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="form-input pl-10 text-sm"
+                  className="form-input pl-12 pr-4 text-sm"
                   placeholder="Enter your email"
                   aria-describedby={error && error.includes('email') ? 'email-error' : undefined}
                 />
@@ -223,7 +223,7 @@ const AuthPage: React.FC = () => {
                 Password
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-gray-400" aria-hidden="true" />
                 </div>
                 <input
@@ -234,14 +234,14 @@ const AuthPage: React.FC = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="form-input pl-10 pr-10 text-sm"
+                  className="form-input pl-12 pr-12 text-sm"
                   placeholder="Enter your password"
                   aria-describedby={isSignUp && password.length > 0 ? 'password-strength' : undefined}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-300 transition-colors interactive"
+                  className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-gray-300 transition-colors interactive"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? (
@@ -278,7 +278,7 @@ const AuthPage: React.FC = () => {
                   Confirm Password
                 </label>
                 <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                     <Lock className="h-5 w-5 text-gray-400" aria-hidden="true" />
                   </div>
                   <input
@@ -289,14 +289,14 @@ const AuthPage: React.FC = () => {
                     required
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="form-input pl-10 pr-10 text-sm"
+                    className="form-input pl-12 pr-12 text-sm"
                     placeholder="Confirm your password"
                     aria-describedby={password !== confirmPassword && confirmPassword.length > 0 ? 'password-match-error' : undefined}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-gray-300 transition-colors interactive"
+                    className="absolute inset-y-0 right-0 pr-4 flex items-center hover:text-gray-300 transition-colors interactive"
                     aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                   >
                     {showConfirmPassword ? (
