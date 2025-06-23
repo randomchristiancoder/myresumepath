@@ -21,7 +21,11 @@ import {
   Heart,
   Star,
   Play,
-  X
+  X,
+  Lock,
+  Eye,
+  UserCheck,
+  Database
 } from 'lucide-react'
 
 interface OnboardingStep {
@@ -275,8 +279,8 @@ const OnboardingFlow: React.FC = () => {
       content: (
         <div className="space-y-6">
           <div className="text-center">
-            <div className="p-4 bg-green-100 rounded-full w-fit mx-auto mb-4">
-              <Shield className="h-12 w-12 text-green-600" />
+            <div className="p-4 bg-gradient-to-r from-emerald-100 to-green-100 rounded-full w-fit mx-auto mb-4">
+              <Shield className="h-12 w-12 text-emerald-600" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">
               Your Privacy is Our Priority
@@ -286,39 +290,47 @@ const OnboardingFlow: React.FC = () => {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 bg-green-50 rounded-xl border border-green-200">
+            <div className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-200 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <CheckCircle2 className="h-5 w-5 text-green-600" />
-                <h3 className="font-semibold text-green-900">Data Ownership</h3>
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <Database className="h-5 w-5 text-emerald-600" />
+                </div>
+                <h3 className="font-semibold text-emerald-900">Data Ownership</h3>
               </div>
-              <p className="text-green-800 text-sm">
+              <p className="text-emerald-800 text-sm leading-relaxed">
                 You retain full ownership of your data with options to export or delete at any time
               </p>
             </div>
-            <div className="p-6 bg-blue-50 rounded-xl border border-blue-200">
+            <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Lock className="h-5 w-5 text-blue-600" />
+                </div>
                 <h3 className="font-semibold text-blue-900">Secure Storage</h3>
               </div>
-              <p className="text-blue-800 text-sm">
+              <p className="text-blue-800 text-sm leading-relaxed">
                 All data is encrypted in transit and at rest using industry-standard security
               </p>
             </div>
-            <div className="p-6 bg-purple-50 rounded-xl border border-purple-200">
+            <div className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl border-2 border-purple-200 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <CheckCircle2 className="h-5 w-5 text-purple-600" />
+                <div className="p-2 bg-purple-100 rounded-lg">
+                  <Eye className="h-5 w-5 text-purple-600" />
+                </div>
                 <h3 className="font-semibold text-purple-900">Transparent Policies</h3>
               </div>
-              <p className="text-purple-800 text-sm">
+              <p className="text-purple-800 text-sm leading-relaxed">
                 Clear, easy-to-understand privacy policies with no hidden terms
               </p>
             </div>
-            <div className="p-6 bg-orange-50 rounded-xl border border-orange-200">
+            <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200 shadow-sm">
               <div className="flex items-center space-x-3 mb-3">
-                <CheckCircle2 className="h-5 w-5 text-orange-600" />
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <UserCheck className="h-5 w-5 text-orange-600" />
+                </div>
                 <h3 className="font-semibold text-orange-900">User Control</h3>
               </div>
-              <p className="text-orange-800 text-sm">
+              <p className="text-orange-800 text-sm leading-relaxed">
                 Granular privacy controls let you decide what data to share and with whom
               </p>
             </div>

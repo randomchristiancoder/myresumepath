@@ -27,7 +27,16 @@ import {
   MousePointer,
   ChevronRight,
   Trophy,
-  BarChart3
+  BarChart3,
+  Briefcase,
+  MapPin,
+  DollarSign,
+  ExternalLink,
+  Building,
+  Calendar,
+  Filter,
+  Search,
+  RefreshCw
 } from 'lucide-react'
 
 interface LayoutProps {
@@ -56,6 +65,19 @@ interface CareerInsight {
   icon: React.ComponentType<any>
 }
 
+interface JobListing {
+  id: string
+  title: string
+  company: string
+  location: string
+  salary?: string
+  type: 'full-time' | 'part-time' | 'contract' | 'remote'
+  posted: string
+  description: string
+  skills: string[]
+  match?: number
+}
+
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const { user, signOut } = useAuth()
   const location = useLocation()
@@ -67,12 +89,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [careerInsights, setCareerInsights] = useState<CareerInsight[]>([])
   const [clickingActivity, setClickingActivity] = useState<string | null>(null)
+  const [jobListings, setJobListings] = useState<JobListing[]>([])
+  const [jobsLoading, setJobsLoading] = useState(false)
+  const [jobSearchTerm, setJobSearchTerm] = useState('')
 
   useEffect(() => {
     checkAdminStatus()
     loadNotifications()
     loadRecentActivity()
     loadCareerInsights()
+    loadJobListings()
   }, [user])
 
   const checkAdminStatus = async () => {
@@ -255,6 +281,69 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }
 
+  const loadJobListings = async () => {
+    setJobsLoading(true)
+    try {
+      // Mock job listings - in production, this would call job board APIs
+      const mockJobs: JobListing[] = [
+        {
+          id: '1',
+          title: 'Senior Software Engineer',
+          company: 'TechCorp',
+          location: 'San Francisco, CA',
+          salary: '$140k - $180k',
+          type: 'full-time',
+          posted: '2 days ago',
+          description: 'Join our team building scalable web applications...',
+          skills: ['React', 'Node.js', 'TypeScript'],
+          match: 94
+        },
+        {
+          id: '2',
+          title: 'Full Stack Developer',
+          company: 'StartupXYZ',
+          location: 'Remote',
+          salary: '$120k - $160k',
+          type: 'remote',
+          posted: '1 week ago',
+          description: 'Build the future of fintech with our growing team...',
+          skills: ['JavaScript', 'Python', 'AWS'],
+          match: 87
+        },
+        {
+          id: '3',
+          title: 'Frontend Engineer',
+          company: 'Design Co',
+          location: 'New York, NY',
+          salary: '$110k - $140k',
+          type: 'full-time',
+          posted: '3 days ago',
+          description: 'Create beautiful user experiences...',
+          skills: ['React', 'CSS', 'Figma'],
+          match: 82
+        },
+        {
+          id: '4',
+          title: 'DevOps Engineer',
+          company: 'CloudTech',
+          location: 'Austin, TX',
+          salary: '$130k - $170k',
+          type: 'full-time',
+          posted: '5 days ago',
+          description: 'Manage cloud infrastructure and deployment pipelines...',
+          skills: ['AWS', 'Docker', 'Kubernetes'],
+          match: 78
+        }
+      ]
+
+      setJobListings(mockJobs)
+    } catch (error) {
+      console.error('Error loading job listings:', error)
+    } finally {
+      setJobsLoading(false)
+    }
+  }
+
   const handleActivityClick = async (activity: RecentActivity) => {
     if (clickingActivity === activity.id) return
 
@@ -389,6 +478,22 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     )
   }
 
+  const getJobTypeColor = (type: string) => {
+    switch (type) {
+      case 'remote': return 'bg-green-100 text-green-800'
+      case 'full-time': return 'bg-blue-100 text-blue-800'
+      case 'part-time': return 'bg-yellow-100 text-yellow-800'
+      case 'contract': return 'bg-purple-100 text-purple-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const filteredJobs = jobListings.filter(job =>
+    job.title.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
+    job.company.toLowerCase().includes(jobSearchTerm.toLowerCase()) ||
+    job.skills.some(skill => skill.toLowerCase().includes(jobSearchTerm.toLowerCase()))
+  )
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen)
   const closeSidebar = () => setIsSidebarOpen(false)
 
@@ -470,6 +575,125 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
               )
             })}
           </nav>
+
+          {/* Job Board Section */}
+          <div className="px-4 pb-4">
+            <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 card-hover">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-white flex items-center">
+                  <Briefcase className="h-4 w-4 mr-2 text-blue-400" aria-hidden="true" />
+                  Job Board
+                </h3>
+                <button 
+                  onClick={loadJobListings}
+                  disabled={jobsLoading}
+                  className="text-xs text-orange-400 hover:text-orange-300 transition-colors interactive"
+                  aria-label="Refresh job listings"
+                >
+                  <RefreshCw className={`h-3 w-3 ${jobsLoading ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {/* Job Search */}
+              <div className="relative mb-3">
+                <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search jobs..."
+                  value={jobSearchTerm}
+                  onChange={(e) => setJobSearchTerm(e.target.value)}
+                  className="w-full pl-7 pr-3 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-orange-500"
+                />
+              </div>
+              
+              {jobsLoading ? (
+                <div className="text-center py-4">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-400 mx-auto"></div>
+                  <p className="text-gray-400 text-xs mt-2">Loading jobs...</p>
+                </div>
+              ) : filteredJobs.length > 0 ? (
+                <div className="space-y-2 max-h-64 overflow-y-auto" role="list" aria-label="Job listings">
+                  {filteredJobs.slice(0, 4).map((job) => (
+                    <div 
+                      key={job.id} 
+                      className="p-3 bg-gray-700 rounded-lg border border-gray-600 hover:border-orange-400 hover:bg-gray-600 transition-all duration-200 cursor-pointer interactive"
+                      role="listitem"
+                    >
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <h4 className="text-xs font-medium text-white truncate-safe">
+                            {job.title}
+                          </h4>
+                          <p className="text-xs text-blue-400 truncate-safe">{job.company}</p>
+                        </div>
+                        {job.match && (
+                          <span className="text-xs font-bold text-green-400 ml-2">
+                            {job.match}%
+                          </span>
+                        )}
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 mb-2">
+                        <div className="flex items-center text-xs text-gray-400">
+                          <MapPin className="h-3 w-3 mr-1" />
+                          <span className="truncate-safe">{job.location}</span>
+                        </div>
+                        {job.salary && (
+                          <div className="flex items-center text-xs text-gray-400">
+                            <DollarSign className="h-3 w-3 mr-1" />
+                            <span className="truncate-safe">{job.salary}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 rounded text-xs font-medium ${getJobTypeColor(job.type)}`}>
+                            {job.type}
+                          </span>
+                          <div className="flex items-center text-xs text-gray-500">
+                            <Calendar className="h-3 w-3 mr-1" />
+                            <span>{job.posted}</span>
+                          </div>
+                        </div>
+                        <ExternalLink className="h-3 w-3 text-orange-400" />
+                      </div>
+
+                      {job.skills.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {job.skills.slice(0, 3).map((skill, index) => (
+                            <span key={index} className="px-1 py-0.5 bg-orange-500/20 text-orange-300 rounded text-xs">
+                              {skill}
+                            </span>
+                          ))}
+                          {job.skills.length > 3 && (
+                            <span className="px-1 py-0.5 bg-gray-600 text-gray-300 rounded text-xs">
+                              +{job.skills.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <Briefcase className="h-8 w-8 text-gray-600 mx-auto mb-2" aria-hidden="true" />
+                  <p className="text-gray-500 text-xs">
+                    {jobSearchTerm ? 'No jobs found' : 'No jobs available'}
+                  </p>
+                </div>
+              )}
+
+              {filteredJobs.length > 4 && (
+                <div className="mt-3 text-center">
+                  <button className="text-xs text-orange-400 hover:text-orange-300 transition-colors">
+                    View All Jobs ({filteredJobs.length})
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Recent Activity Section with Enhanced Accessibility */}
           <div className="px-4 pb-4">
