@@ -149,27 +149,38 @@ const OnboardingFlow: React.FC = () => {
               We'll customize your experience based on your role and goals
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {userPersonas.map((persona) => (
               <button
                 key={persona.id}
                 onClick={() => setSelectedPersona(persona.id)}
-                className={`p-6 rounded-xl border-2 transition-all duration-200 text-left ${
+                className={`p-6 rounded-xl border-2 transition-all duration-200 text-left h-full ${
                   selectedPersona === persona.id
                     ? 'border-blue-500 bg-blue-50 shadow-lg'
                     : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
                 }`}
               >
-                <div className="flex items-start space-x-4">
-                  <div className={`p-3 rounded-lg bg-gradient-to-r ${persona.color}`}>
-                    <persona.icon className="h-6 w-6 text-white" />
+                <div className="flex flex-col h-full">
+                  <div className="flex items-start space-x-4 mb-4">
+                    <div className={`p-3 rounded-lg bg-gradient-to-r ${persona.color} flex-shrink-0`}>
+                      <persona.icon className="h-6 w-6 text-white" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-slate-900 mb-2 text-wrap">
+                        {persona.title}
+                      </h3>
+                      <p className="text-sm text-slate-600 mb-4 leading-relaxed text-wrap">
+                        {persona.description}
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-slate-900 mb-1">{persona.title}</h3>
-                    <p className="text-sm text-slate-600 mb-3">{persona.description}</p>
-                    <div className="flex flex-wrap gap-1">
+                  <div className="mt-auto">
+                    <div className="flex flex-wrap gap-2">
                       {persona.features.map((feature, index) => (
-                        <span key={index} className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">
+                        <span 
+                          key={index} 
+                          className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs font-medium whitespace-nowrap"
+                        >
                           {feature}
                         </span>
                       ))}
