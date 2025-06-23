@@ -403,6 +403,16 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     }
   }
 
+  const handleJobClick = (job: JobListing) => {
+    navigate(`/jobs?job=${job.id}`)
+    setIsSidebarOpen(false)
+  }
+
+  const handleJobBoardClick = () => {
+    navigate('/jobs')
+    setIsSidebarOpen(false)
+  }
+
   const navigation = [
     { 
       name: 'Dashboard', 
@@ -421,6 +431,12 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       href: '/analysis', 
       icon: Target,
       description: 'Skills and career insights'
+    },
+    { 
+      name: 'Job Board', 
+      href: '/jobs', 
+      icon: Briefcase,
+      description: 'Find opportunities'
     },
     { 
       name: 'Reports', 
@@ -580,10 +596,13 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           <div className="px-4 pb-4">
             <div className="bg-gray-800 rounded-xl p-4 border border-gray-700 card-hover">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-sm font-semibold text-white flex items-center">
+                <button
+                  onClick={handleJobBoardClick}
+                  className="flex items-center text-sm font-semibold text-white hover:text-orange-300 transition-colors"
+                >
                   <Briefcase className="h-4 w-4 mr-2 text-blue-400" aria-hidden="true" />
                   Job Board
-                </h3>
+                </button>
                 <button 
                   onClick={loadJobListings}
                   disabled={jobsLoading}
@@ -616,6 +635,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                   {filteredJobs.slice(0, 4).map((job) => (
                     <div 
                       key={job.id} 
+                      onClick={() => handleJobClick(job)}
                       className="p-3 bg-gray-700 rounded-lg border border-gray-600 hover:border-orange-400 hover:bg-gray-600 transition-all duration-200 cursor-pointer interactive"
                       role="listitem"
                     >
@@ -687,7 +707,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
 
               {filteredJobs.length > 4 && (
                 <div className="mt-3 text-center">
-                  <button className="text-xs text-orange-400 hover:text-orange-300 transition-colors">
+                  <button 
+                    onClick={handleJobBoardClick}
+                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors"
+                  >
                     View All Jobs ({filteredJobs.length})
                   </button>
                 </div>

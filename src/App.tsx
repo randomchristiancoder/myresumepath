@@ -15,6 +15,7 @@ import AnalysisPage from './pages/AnalysisPage'
 import ReportsPage from './pages/ReportsPage'
 import ApiKeysPage from './pages/ApiKeysPage'
 import AdminPage from './pages/AdminPage'
+import JobBoardPage from './pages/JobBoardPage'
 import ProgressTracker from './components/ProgressTracker'
 
 function App() {
@@ -67,6 +68,18 @@ function App() {
                 <ProtectedRoute>
                   <Layout>
                     <ReportsPage />
+                  </Layout>
+                  <HelpSystem />
+                  <AccessibilityFeatures />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/jobs"
+              element={
+                <ProtectedRoute>
+                  <Layout>
+                    <JobBoardPage />
                   </Layout>
                   <HelpSystem />
                   <AccessibilityFeatures />
