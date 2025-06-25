@@ -32,7 +32,10 @@ import {
   Clock,
   Database,
   Cpu,
-  ArrowLeft
+  ArrowLeft,
+  History,
+  Trash2,
+  Download
 } from 'lucide-react'
 
 interface ParsedResume {
@@ -117,6 +120,14 @@ interface ParsedResume {
   }
 }
 
+interface ResumeHistoryItem {
+  id: string
+  filename: string
+  created_at: string
+  parsed_data: ParsedResume
+  content: string
+}
+
 const UploadPage: React.FC = () => {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -134,6 +145,12 @@ const UploadPage: React.FC = () => {
   const [serverStatus, setServerStatus] = useState<'checking' | 'connected' | 'offline'>('checking')
   const [resumeId, setResumeId] = useState<string | null>(null)
   const [viewData, setViewData] = useState<any>(null)
+  
+  // New state for resume history
+  const [viewMode, setViewMode] = useState<'upload' | 'preview' | 'history'>('upload')
+  const [resumesHistory, setResumesHistory] = useState<ResumeHistoryItem[]>([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -142,6 +159,7 @@ const UploadPage: React.FC = () => {
       setError(null)
       setShowPreview(false)
       setParsedData(null)
+      setViewMode('upload')
     }
   }, [])
 
@@ -185,12 +203,102 @@ const UploadPage: React.FC = () => {
         setViewData(data)
         setParsedData(data.parsedData)
         setShowPreview(true)
+        setViewMode('preview')
         setAiEnhanced(true)
         setExtractionQuality('High Quality')
         setResumeId(data.resumeId)
       }
     }
   }, [isViewMode])
+
+  // Load resumes history
+  const loadResumesHistory = async () => {
+    if (!user) return
+
+    setHistoryLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('resumes')
+        .select('id, filename, created_at, parsed_data, content')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+
+      if (error) throw error
+
+      setResumesHistory(data || [])
+    } catch (error) {
+      console.error('Error loading resumes history:', error)
+      setError('Failed to load resume history')
+    } finally {
+      setHistoryLoading(false)
+    }
+  }
+
+  // Handle delete resume
+  const handleDeleteResume = async (resumeId: string, filename: string) => {
+    if (!confirm(`Are you sure you want to delete "${filename}"? This action cannot be undone.`)) {
+      return
+    }
+
+    setDeletingId(resumeId)
+    try {
+      const { error } = await supabase
+        .from('resumes')
+        .delete()
+        .eq('id', resumeId)
+        .eq('user_id', user?.id) // Extra security check
+
+      if (error) throw error
+
+      // Remove from local state
+      setResumesHistory(prev => prev.filter(resume => resume.id !== resumeId))
+      
+      // Clear localStorage if this was the current resume
+      const storedAnalysis = localStorage.getItem('resumeAnalysis')
+      if (storedAnalysis) {
+        const analysis = JSON.parse(storedAnalysis)
+        if (analysis.resumeId === resumeId) {
+          localStorage.removeItem('resumeAnalysis')
+        }
+      }
+
+      const storedViewData = localStorage.getItem('viewResumeData')
+      if (storedViewData) {
+        const viewData = JSON.parse(storedViewData)
+        if (viewData.resumeId === resumeId) {
+          localStorage.removeItem('viewResumeData')
+        }
+      }
+
+    } catch (error) {
+      console.error('Error deleting resume:', error)
+      setError('Failed to delete resume. Please try again.')
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
+  // Handle view resume from history
+  const handleViewResume = (resume: ResumeHistoryItem) => {
+    setParsedData(resume.parsed_data)
+    setShowPreview(true)
+    setViewMode('preview')
+    setAiEnhanced(true)
+    setExtractionQuality('High Quality')
+    setResumeId(resume.id)
+    
+    // Store in localStorage for consistency
+    const viewData = {
+      parsedData: resume.parsed_data,
+      filename: resume.filename,
+      uploadedAt: resume.created_at,
+      resumeId: resume.id,
+      content: resume.content,
+      aiEnhanced: true,
+      extractionQuality: 'High Quality'
+    }
+    localStorage.setItem('viewResumeData', JSON.stringify(viewData))
+  }
 
   const saveResumeToDatabase = async (parsedData: ParsedResume, filename: string, content: string) => {
     if (!user) return null
@@ -254,6 +362,7 @@ const UploadPage: React.FC = () => {
       setAiEnhanced(result.aiEnhanced || false)
       setExtractionQuality(result.extractionQuality || 'Standard')
       setShowPreview(true)
+      setViewMode('preview')
 
       // Save to Supabase database
       const savedResumeId = await saveResumeToDatabase(
@@ -274,6 +383,11 @@ const UploadPage: React.FC = () => {
         uploadedAt: new Date().toISOString(),
         resumeId: savedResumeId
       }))
+
+      // Refresh history if we're viewing it
+      if (viewMode === 'history') {
+        loadResumesHistory()
+      }
 
     } catch (err: any) {
       console.error('Upload error:', err)
@@ -300,6 +414,7 @@ const UploadPage: React.FC = () => {
     setUploadedFile(null)
     setParsedData(null)
     setShowPreview(false)
+    setViewMode('upload')
     setError(null)
     setAiEnhanced(false)
     setExtractionQuality('')
@@ -313,6 +428,18 @@ const UploadPage: React.FC = () => {
   const handleBackToDashboard = () => {
     localStorage.removeItem('viewResumeData')
     navigate('/dashboard')
+  }
+
+  const handleBackToUpload = () => {
+    setViewMode('upload')
+    setShowPreview(false)
+    setParsedData(null)
+    setError(null)
+  }
+
+  const handleShowHistory = () => {
+    setViewMode('history')
+    loadResumesHistory()
   }
 
   const renderSkillCategory = (title: string, skills: string[] = [], icon: React.ReactNode, color: string) => {
@@ -346,6 +473,19 @@ const UploadPage: React.FC = () => {
     )
   }
 
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return '0 Bytes'
+    const k = 1024
+    const sizes = ['Bytes', 'KB', 'MB', 'GB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+  }
+
+  const getSkillsCount = (parsedData: ParsedResume) => {
+    if (!parsedData?.skills) return 0
+    return Object.values(parsedData.skills).flat().length
+  }
+
   return (
     <div className="max-w-6xl mx-auto space-y-8">
       {/* Header */}
@@ -364,21 +504,56 @@ const UploadPage: React.FC = () => {
               <span className="font-medium">Viewing Resume Details</span>
             </div>
           </div>
+        ) : viewMode === 'history' ? (
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={handleBackToUpload}
+              className="flex items-center px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to Upload
+            </button>
+            <div className="flex items-center space-x-2 text-purple-600">
+              <History className="h-5 w-5" />
+              <span className="font-medium">Resume History</span>
+            </div>
+          </div>
+        ) : viewMode === 'preview' ? (
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={handleBackToUpload}
+              className="flex items-center px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              Back to Upload
+            </button>
+            <div className="flex items-center space-x-2 text-green-600">
+              <CheckCircle2 className="h-5 w-5" />
+              <span className="font-medium">Resume Analysis Complete</span>
+            </div>
+          </div>
         ) : null}
         
         <h1 className="text-3xl font-bold text-slate-900 mb-4">
-          {isViewMode ? 'Resume Details' : 'Upload Your Resume'}
+          {isViewMode ? 'Resume Details' : 
+           viewMode === 'history' ? 'Resume History' :
+           viewMode === 'preview' ? 'Resume Analysis' :
+           'Upload Your Resume'}
         </h1>
         <p className="text-lg text-slate-600">
           {isViewMode 
             ? `Viewing details for ${viewData?.filename || 'your resume'}`
+            : viewMode === 'history'
+            ? 'View and manage your uploaded resumes'
+            : viewMode === 'preview'
+            ? 'Review your analyzed resume data and proceed to career insights'
             : 'Upload your resume to get comprehensive career insights and recommendations'
           }
         </p>
       </div>
 
       {/* Server Status Indicator - Only show in upload mode */}
-      {!isViewMode && (
+      {!isViewMode && viewMode === 'upload' && (
         <div className={`rounded-lg p-4 border ${
           serverStatus === 'offline' 
             ? 'bg-red-50 border-red-200' 
@@ -423,109 +598,230 @@ const UploadPage: React.FC = () => {
         </div>
       )}
 
-      {!showPreview ? (
+      {/* Resume History View */}
+      {viewMode === 'history' && (
         <div className="space-y-6">
-          {/* Upload Area - Only show in upload mode */}
-          {!isViewMode && (
-            <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
-              <div
-                {...getRootProps()}
-                className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 cursor-pointer ${
-                  isDragActive
-                    ? 'border-blue-500 bg-blue-50'
-                    : uploadedFile
-                    ? 'border-green-500 bg-green-50'
-                    : 'border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50'
-                }`}
-              >
-                <input {...getInputProps()} />
-                
-                {uploadedFile ? (
-                  <div className="space-y-4">
-                    <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
-                    <div>
-                      <p className="text-lg font-semibold text-slate-900">
-                        {uploadedFile.name}
-                      </p>
-                      <p className="text-slate-600">
-                        {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile.type || 'Unknown type'}
-                      </p>
-                    </div>
-                    <div className="flex justify-center space-x-4">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleRemoveFile()
-                        }}
-                        className="flex items-center px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
-                      >
-                        <X className="h-4 w-4 mr-2" />
-                        Remove
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <Upload className="h-16 w-16 text-slate-400 mx-auto" />
-                    <div>
-                      <p className="text-xl font-semibold text-slate-900 mb-2">
-                        {isDragActive ? 'Drop your resume here' : 'Upload your resume'}
-                      </p>
-                      <p className="text-slate-600">
-                        Drag and drop your file here, or click to browse
-                      </p>
-                      <p className="text-sm text-slate-500 mt-2">
-                        Supports TXT, PDF, and DOCX files (max 10MB)
-                      </p>
-                    </div>
-                  </div>
-                )}
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-semibold text-slate-900 flex items-center">
+                <History className="h-6 w-6 mr-3 text-purple-600" />
+                Your Resume History
+              </h2>
+              <div className="flex items-center space-x-3">
+                <span className="text-sm text-slate-600">
+                  {resumesHistory.length} resume{resumesHistory.length !== 1 ? 's' : ''} uploaded
+                </span>
+                <button
+                  onClick={loadResumesHistory}
+                  disabled={historyLoading}
+                  className="flex items-center px-3 py-2 text-blue-600 hover:text-blue-700 transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw className={`h-4 w-4 mr-2 ${historyLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </button>
               </div>
+            </div>
 
-              {error && (
-                <div className="mt-4 flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
-                  <div className="flex-1">
-                    <p className="text-red-800 font-medium">Analysis Error</p>
-                    <p className="text-red-700 text-sm mt-1">{error}</p>
-                    
-                    {/* Server startup instructions */}
-                    {error.includes('backend server') && (
-                      <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-800">
-                        <strong>To start the backend server:</strong><br />
-                        1. Open a terminal in your project directory<br />
-                        2. Run: <code className="bg-red-200 px-1 rounded">npm run dev</code><br />
-                        3. Wait for "Server running\" message<br />
-                        4. Return here and try uploading again
+            {historyLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                <p className="text-slate-600">Loading resume history...</p>
+              </div>
+            ) : resumesHistory.length > 0 ? (
+              <div className="space-y-4">
+                {resumesHistory.map((resume) => (
+                  <div
+                    key={resume.id}
+                    className="border border-slate-200 rounded-lg p-4 hover:shadow-md transition-all duration-200"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="p-3 bg-purple-100 rounded-lg">
+                          <FileText className="h-6 w-6 text-purple-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-slate-900 truncate">
+                            {resume.filename}
+                          </h3>
+                          <div className="flex items-center space-x-4 mt-1 text-sm text-slate-600">
+                            <div className="flex items-center">
+                              <Calendar className="h-4 w-4 mr-1" />
+                              {new Date(resume.created_at).toLocaleDateString()}
+                            </div>
+                            <div className="flex items-center">
+                              <Target className="h-4 w-4 mr-1" />
+                              {getSkillsCount(resume.parsed_data)} skills
+                            </div>
+                            {resume.parsed_data?.analysis?.experienceLevel && (
+                              <div className="flex items-center">
+                                <Award className="h-4 w-4 mr-1" />
+                                {resume.parsed_data.analysis.experienceLevel}
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                    )}
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handleViewResume(resume)}
+                          className="flex items-center px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleDeleteResume(resume.id, resume.filename)}
+                          disabled={deletingId === resume.id}
+                          className="flex items-center px-3 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {deletingId === resume.id ? (
+                            <>
+                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 mr-2"></div>
+                              Deleting...
+                            </>
+                          ) : (
+                            <>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Delete
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <History className="h-16 w-16 text-slate-300 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-slate-900 mb-2">No resumes uploaded yet</h3>
+                <p className="text-slate-600 mb-6">
+                  Upload your first resume to start building your career development history
+                </p>
+                <button
+                  onClick={handleBackToUpload}
+                  className="flex items-center mx-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg"
+                >
+                  <Upload className="h-5 w-5 mr-2" />
+                  Upload Resume
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Upload View */}
+      {viewMode === 'upload' && !showPreview && (
+        <div className="space-y-6">
+          {/* Upload Area */}
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 p-8">
+            <div
+              {...getRootProps()}
+              className={`border-2 border-dashed rounded-xl p-12 text-center transition-all duration-200 cursor-pointer ${
+                isDragActive
+                  ? 'border-blue-500 bg-blue-50'
+                  : uploadedFile
+                  ? 'border-green-500 bg-green-50'
+                  : 'border-slate-300 bg-slate-50 hover:border-blue-400 hover:bg-blue-50'
+              }`}
+            >
+              <input {...getInputProps()} />
+              
+              {uploadedFile ? (
+                <div className="space-y-4">
+                  <CheckCircle2 className="h-16 w-16 text-green-500 mx-auto" />
+                  <div>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {uploadedFile.name}
+                    </p>
+                    <p className="text-slate-600">
+                      {(uploadedFile.size / 1024 / 1024).toFixed(2)} MB • {uploadedFile.type || 'Unknown type'}
+                    </p>
+                  </div>
+                  <div className="flex justify-center space-x-4">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleRemoveFile()
+                      }}
+                      className="flex items-center px-4 py-2 text-slate-600 hover:text-slate-800 transition-colors"
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Remove
+                    </button>
                   </div>
                 </div>
-              )}
-
-              {uploadedFile && serverStatus === 'connected' && (
-                <div className="mt-6 flex justify-center">
-                  <button
-                    onClick={handleAnalyze}
-                    disabled={isUploading || isParsing}
-                    className="flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
-                  >
-                    {isParsing ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                        Analyzing Resume...
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="h-5 w-5 mr-3" />
-                        Analyze Resume
-                      </>
-                    )}
-                  </button>
+              ) : (
+                <div className="space-y-4">
+                  <Upload className="h-16 w-16 text-slate-400 mx-auto" />
+                  <div>
+                    <p className="text-xl font-semibold text-slate-900 mb-2">
+                      {isDragActive ? 'Drop your resume here' : 'Upload your resume'}
+                    </p>
+                    <p className="text-slate-600">
+                      Drag and drop your file here, or click to browse
+                    </p>
+                    <p className="text-sm text-slate-500 mt-2">
+                      Supports TXT, PDF, and DOCX files (max 10MB)
+                    </p>
+                  </div>
                 </div>
               )}
             </div>
-          )}
+
+            {error && (
+              <div className="mt-4 flex items-start p-4 bg-red-50 border border-red-200 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-red-500 mr-3 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-red-800 font-medium">Analysis Error</p>
+                  <p className="text-red-700 text-sm mt-1">{error}</p>
+                  
+                  {/* Server startup instructions */}
+                  {error.includes('backend server') && (
+                    <div className="mt-3 p-3 bg-red-100 rounded text-sm text-red-800">
+                      <strong>To start the backend server:</strong><br />
+                      1. Open a terminal in your project directory<br />
+                      2. Run: <code className="bg-red-200 px-1 rounded">npm run dev</code><br />
+                      3. Wait for "Server running" message<br />
+                      4. Return here and try uploading again
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="mt-6 flex justify-center space-x-4">
+              {uploadedFile && serverStatus === 'connected' && (
+                <button
+                  onClick={handleAnalyze}
+                  disabled={isUploading || isParsing}
+                  className="flex items-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg"
+                >
+                  {isParsing ? (
+                    <>
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                      Analyzing Resume...
+                    </>
+                  ) : (
+                    <>
+                      <Brain className="h-5 w-5 mr-3" />
+                      Analyze Resume
+                    </>
+                  )}
+                </button>
+              )}
+              
+              <button
+                onClick={handleShowHistory}
+                className="flex items-center px-6 py-3 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-all duration-200"
+              >
+                <History className="h-5 w-5 mr-2" />
+                View History ({resumesHistory.length})
+              </button>
+            </div>
+          </div>
 
           {/* Processing Steps */}
           {(isUploading || isParsing) && (
@@ -578,8 +874,10 @@ const UploadPage: React.FC = () => {
             </div>
           )}
         </div>
-      ) : (
-        /* Comprehensive Resume Preview */
+      )}
+
+      {/* Preview View - Same as before but with updated navigation */}
+      {(viewMode === 'preview' || showPreview) && parsedData && (
         <div className="space-y-8">
           {/* Analysis Quality Banner */}
           <div className={`rounded-2xl p-6 border ${
@@ -608,7 +906,7 @@ const UploadPage: React.FC = () => {
                   </p>
                 </div>
               </div>
-              {!isViewMode && (
+              {!isViewMode && viewMode !== 'history' && (
                 <button
                   onClick={() => setShowPreview(false)}
                   className="text-slate-400 hover:text-slate-600 transition-colors"
