@@ -23,14 +23,23 @@ import {
   Building,
   Globe,
   Briefcase,
-  GraduationCap
+  GraduationCap,
+  X,
+  BarChart3,
+  Users,
+  BookOpen,
+  Lightbulb,
+  Sparkles,
+  ArrowRight,
+  Clock,
+  Star
 } from 'lucide-react'
 import jsPDF from 'jspdf'
 
 interface Report {
   id: string
   title: string
-  type: 'skill-analysis' | 'career-match' | 'comprehensive'
+  type: 'skill-analysis' | 'career-match' | 'comprehensive' | 'career-gap' | 'suggested-jobs'
   created_at: string
   status: 'draft' | 'completed'
   summary: string
@@ -52,17 +61,80 @@ interface AssessmentData {
   created_at: string
 }
 
+interface ReportOption {
+  id: string
+  title: string
+  description: string
+  icon: React.ComponentType<any>
+  color: string
+  features: string[]
+  estimatedTime: string
+  requiresAssessment?: boolean
+}
+
 const ReportsPage: React.FC = () => {
   const { user } = useAuth()
   const [reports, setReports] = useState<Report[]>([])
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
-  const [filter, setFilter] = useState<'all' | 'skill-analysis' | 'career-match' | 'comprehensive'>('all')
+  const [filter, setFilter] = useState<'all' | 'skill-analysis' | 'career-match' | 'comprehensive' | 'career-gap' | 'suggested-jobs'>('all')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedReport, setSelectedReport] = useState<Report | null>(null)
   const [showPreview, setShowPreview] = useState(false)
   const [resumeData, setResumeData] = useState<ResumeData[]>([])
   const [assessmentData, setAssessmentData] = useState<AssessmentData[]>([])
+  const [showReportTypeSelection, setShowReportTypeSelection] = useState(false)
+  const [selectedReportType, setSelectedReportType] = useState<string | null>(null)
+  const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
+
+  const reportOptions: ReportOption[] = [
+    {
+      id: 'skill-analysis',
+      title: 'Skills Analysis',
+      description: 'Detailed breakdown of your technical and soft skills with proficiency levels and market demand analysis.',
+      icon: Target,
+      color: 'from-blue-500 to-cyan-500',
+      features: ['Skill categorization', 'Proficiency mapping', 'Market demand analysis', 'Skill recommendations'],
+      estimatedTime: '2-3 minutes'
+    },
+    {
+      id: 'comprehensive',
+      title: 'Overall Resume Analysis',
+      description: 'Complete analysis of your resume including personal info, experience, education, and comprehensive insights.',
+      icon: FileText,
+      color: 'from-purple-500 to-pink-500',
+      features: ['Complete resume breakdown', 'Experience analysis', 'Education review', 'Overall assessment'],
+      estimatedTime: '3-4 minutes'
+    },
+    {
+      id: 'career-match',
+      title: 'Career Analysis Report',
+      description: 'Personality-driven career recommendations with job matches based on your skills and interests.',
+      icon: TrendingUp,
+      color: 'from-green-500 to-emerald-500',
+      features: ['Personality insights', 'Career matching', 'Job recommendations', 'Growth opportunities'],
+      estimatedTime: '4-5 minutes',
+      requiresAssessment: true
+    },
+    {
+      id: 'career-gap',
+      title: 'Career Gap Analysis',
+      description: 'Identify skill gaps and learning opportunities to advance your career to the next level.',
+      icon: BarChart3,
+      color: 'from-orange-500 to-red-500',
+      features: ['Skill gap identification', 'Learning pathways', 'Course recommendations', 'Timeline planning'],
+      estimatedTime: '3-4 minutes'
+    },
+    {
+      id: 'suggested-jobs',
+      title: 'Suggested Jobs Report',
+      description: 'Curated job opportunities that match your skills, experience level, and career aspirations.',
+      icon: Briefcase,
+      color: 'from-indigo-500 to-purple-500',
+      features: ['Job matching', 'Salary insights', 'Company analysis', 'Application tips'],
+      estimatedTime: '2-3 minutes'
+    }
+  ]
 
   useEffect(() => {
     loadData()
@@ -211,55 +283,52 @@ const ReportsPage: React.FC = () => {
     }
   }
 
+  const handleGenerateReport = () => {
+    if (resumeData.length === 0) {
+      alert('Please upload a resume first to generate a report.')
+      return
+    }
+    setShowReportTypeSelection(true)
+  }
+
+  const handleReportTypeSelect = (reportType: string) => {
+    setSelectedReportType(reportType)
+    
+    // If only one resume, auto-select it
+    if (resumeData.length === 1) {
+      setSelectedResumeId(resumeData[0].id)
+    }
+  }
+
   const generateNewReport = async () => {
-    if (!user) return
+    if (!user || !selectedReportType || !selectedResumeId) return
 
     setGenerating(true)
 
     try {
-      // Check if we have the necessary data
-      if (resumeData.length === 0) {
-        alert('Please upload a resume first to generate a report.')
+      const selectedResume = resumeData.find(r => r.id === selectedResumeId)
+      if (!selectedResume) {
+        throw new Error('Selected resume not found')
+      }
+
+      const latestAssessment = assessmentData[0]
+      const reportOption = reportOptions.find(opt => opt.id === selectedReportType)
+
+      // Check if assessment is required but not available
+      if (reportOption?.requiresAssessment && !latestAssessment) {
+        alert('This report type requires a completed assessment. Please complete an assessment first.')
         return
       }
 
-      const latestResume = resumeData[0]
-      const latestAssessment = assessmentData[0]
-
-      // Create comprehensive report data
-      const reportData = {
-        resumeAnalysis: {
-          filename: latestResume.filename,
-          skills: latestResume.parsed_data?.skills || {},
-          experience: latestResume.parsed_data?.experience || [],
-          education: latestResume.parsed_data?.education || [],
-          experienceLevel: latestResume.parsed_data?.analysis?.experienceLevel || 'Mid-level',
-          strengthAreas: ['Full-stack development', 'Problem solving', 'Team collaboration']
-        },
-        skillGaps: [
-          { skill: 'Machine Learning', currentLevel: 2, requiredLevel: 4, priority: 'high' },
-          { skill: 'Cloud Architecture', currentLevel: 3, requiredLevel: 5, priority: 'high' },
-          { skill: 'DevOps', currentLevel: 2, requiredLevel: 4, priority: 'medium' }
-        ],
-        careerMatches: [
-          { role: 'Senior Software Architect', match: 94, salary: '$150,000 - $220,000' },
-          { role: 'Technical Lead', match: 91, salary: '$130,000 - $180,000' }
-        ],
-        personalityInsights: latestAssessment?.results || {
-          type: 'Investigative & Enterprising',
-          strengths: ['Technical problem-solving', 'Strategic thinking'],
-          workStyle: 'Collaborative environment with autonomy'
-        },
-        generatedAt: new Date().toISOString(),
-        dataSource: 'User resume and assessment data'
-      }
+      // Create report data based on selected type and resume
+      const reportData = generateReportData(selectedReportType, selectedResume, latestAssessment)
 
       // Save to database
       const { data, error } = await supabase
         .from('reports')
         .insert({
           user_id: user.id,
-          resume_id: latestResume.id,
+          resume_id: selectedResumeId,
           assessment_id: latestAssessment?.id || null,
           report_data: reportData
         })
@@ -270,12 +339,117 @@ const ReportsPage: React.FC = () => {
 
       // Reload reports
       await loadData()
+      
+      // Close modal
+      setShowReportTypeSelection(false)
+      setSelectedReportType(null)
+      setSelectedResumeId(null)
 
     } catch (error) {
       console.error('Error generating report:', error)
       alert('Failed to generate report. Please try again.')
     } finally {
       setGenerating(false)
+    }
+  }
+
+  const generateReportData = (reportType: string, resume: ResumeData, assessment?: AssessmentData) => {
+    const baseData = {
+      resumeAnalysis: {
+        filename: resume.filename,
+        skills: resume.parsed_data?.skills || {},
+        experience: resume.parsed_data?.experience || [],
+        education: resume.parsed_data?.education || [],
+        experienceLevel: resume.parsed_data?.analysis?.experienceLevel || 'Mid-level',
+        strengthAreas: ['Full-stack development', 'Problem solving', 'Team collaboration']
+      },
+      generatedAt: new Date().toISOString(),
+      dataSource: 'User resume and assessment data',
+      reportType: reportType
+    }
+
+    switch (reportType) {
+      case 'skill-analysis':
+        return {
+          ...baseData,
+          skillBreakdown: resume.parsed_data?.skills || {},
+          skillGaps: [
+            { skill: 'Machine Learning', currentLevel: 2, requiredLevel: 4, priority: 'high' },
+            { skill: 'Cloud Architecture', currentLevel: 3, requiredLevel: 5, priority: 'high' }
+          ],
+          marketDemand: {
+            highDemand: ['React', 'Python', 'AWS'],
+            mediumDemand: ['Vue.js', 'Docker'],
+            lowDemand: ['jQuery', 'PHP']
+          }
+        }
+
+      case 'career-gap':
+        return {
+          ...baseData,
+          skillGaps: [
+            { skill: 'Machine Learning', currentLevel: 2, requiredLevel: 4, priority: 'high' },
+            { skill: 'Cloud Architecture', currentLevel: 3, requiredLevel: 5, priority: 'high' },
+            { skill: 'DevOps', currentLevel: 2, requiredLevel: 4, priority: 'medium' }
+          ],
+          learningPath: [
+            { step: 1, skill: 'Machine Learning', timeframe: '3-6 months', resources: ['Coursera ML Course'] },
+            { step: 2, skill: 'Cloud Architecture', timeframe: '2-4 months', resources: ['AWS Certification'] }
+          ]
+        }
+
+      case 'suggested-jobs':
+        return {
+          ...baseData,
+          jobMatches: [
+            { role: 'Senior Software Engineer', match: 94, salary: '$140,000 - $180,000', company: 'TechCorp' },
+            { role: 'Full Stack Developer', match: 89, salary: '$120,000 - $160,000', company: 'StartupXYZ' }
+          ],
+          salaryInsights: {
+            currentMarketValue: '$150,000',
+            potentialIncrease: '15-25%',
+            topPayingSkills: ['React', 'AWS', 'Python']
+          }
+        }
+
+      case 'career-match':
+        return {
+          ...baseData,
+          personalityInsights: assessment?.results || {
+            type: 'Investigative & Enterprising',
+            strengths: ['Technical problem-solving', 'Strategic thinking'],
+            workStyle: 'Collaborative environment with autonomy'
+          },
+          careerMatches: [
+            { role: 'Senior Software Architect', match: 94, salary: '$150,000 - $220,000' },
+            { role: 'Technical Lead', match: 91, salary: '$130,000 - $180,000' }
+          ]
+        }
+
+      default: // comprehensive
+        return {
+          ...baseData,
+          skillGaps: [
+            { skill: 'Machine Learning', currentLevel: 2, requiredLevel: 4, priority: 'high' },
+            { skill: 'Cloud Architecture', currentLevel: 3, requiredLevel: 5, priority: 'high' }
+          ],
+          careerMatches: [
+            { role: 'Senior Software Architect', match: 94, salary: '$150,000 - $220,000' },
+            { role: 'Technical Lead', match: 91, salary: '$130,000 - $180,000' }
+          ],
+          courseRecommendations: [
+            {
+              title: 'AWS Solutions Architect Professional',
+              provider: 'AWS Training',
+              duration: '40 hours',
+              price: '$300'
+            }
+          ],
+          personalityInsights: assessment?.results || {
+            type: 'Investigative & Enterprising',
+            strengths: ['Technical problem-solving', 'Strategic thinking']
+          }
+        }
     }
   }
 
@@ -468,15 +642,19 @@ const ReportsPage: React.FC = () => {
       case 'skill-analysis': return Target
       case 'career-match': return TrendingUp
       case 'comprehensive': return Brain
+      case 'career-gap': return BarChart3
+      case 'suggested-jobs': return Briefcase
       default: return FileText
     }
   }
 
   const getReportColor = (type: string) => {
     switch (type) {
-      case 'skill-analysis': return 'from-red-500 to-pink-500'
+      case 'skill-analysis': return 'from-blue-500 to-cyan-500'
       case 'career-match': return 'from-green-500 to-emerald-500'
-      case 'comprehensive': return 'from-blue-500 to-purple-500'
+      case 'comprehensive': return 'from-purple-500 to-pink-500'
+      case 'career-gap': return 'from-orange-500 to-red-500'
+      case 'suggested-jobs': return 'from-indigo-500 to-purple-500'
       default: return 'from-slate-500 to-slate-600'
     }
   }
@@ -486,6 +664,8 @@ const ReportsPage: React.FC = () => {
       case 'skill-analysis': return 'Skill Analysis'
       case 'career-match': return 'Career Match'
       case 'comprehensive': return 'Comprehensive'
+      case 'career-gap': return 'Career Gap'
+      case 'suggested-jobs': return 'Suggested Jobs'
       default: return 'Report'
     }
   }
@@ -509,7 +689,7 @@ const ReportsPage: React.FC = () => {
           </p>
         </div>
         <button 
-          onClick={generateNewReport}
+          onClick={handleGenerateReport}
           disabled={generating || resumeData.length === 0}
           className="mt-4 md:mt-0 flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
         >
@@ -604,6 +784,8 @@ const ReportsPage: React.FC = () => {
               <option value="comprehensive">Comprehensive</option>
               <option value="skill-analysis">Skill Analysis</option>
               <option value="career-match">Career Match</option>
+              <option value="career-gap">Career Gap</option>
+              <option value="suggested-jobs">Suggested Jobs</option>
             </select>
           </div>
         </div>
@@ -703,7 +885,7 @@ const ReportsPage: React.FC = () => {
           </p>
           {(!searchTerm && filter === 'all') && (
             <button 
-              onClick={resumeData.length === 0 ? () => window.location.href = '/upload' : generateNewReport}
+              onClick={resumeData.length === 0 ? () => window.location.href = '/upload' : handleGenerateReport}
               disabled={generating}
               className="flex items-center mx-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg disabled:opacity-50"
             >
@@ -725,6 +907,226 @@ const ReportsPage: React.FC = () => {
               )}
             </button>
           )}
+        </div>
+      )}
+
+      {/* Report Type Selection Modal */}
+      {showReportTypeSelection && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold">Generate New Report</h2>
+                  <p className="text-blue-100 text-sm mt-1">
+                    Choose the type of report and select which resume data to use
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowReportTypeSelection(false)
+                    setSelectedReportType(null)
+                    setSelectedResumeId(null)
+                  }}
+                  className="text-white hover:text-blue-200 transition-colors"
+                >
+                  <X className="h-6 w-6" />
+                </button>
+              </div>
+            </div>
+
+            <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
+              {!selectedReportType ? (
+                /* Report Type Selection */
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-xl font-semibold text-slate-900 mb-2">Select Report Type</h3>
+                    <p className="text-slate-600">Choose the type of analysis you'd like to generate</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {reportOptions.map((option) => (
+                      <div
+                        key={option.id}
+                        onClick={() => handleReportTypeSelect(option.id)}
+                        className="p-6 border-2 border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-lg transition-all duration-200 cursor-pointer group"
+                      >
+                        <div className="flex items-start space-x-4">
+                          <div className={`p-3 rounded-lg bg-gradient-to-r ${option.color} group-hover:scale-110 transition-transform duration-200`}>
+                            <option.icon className="h-6 w-6 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-lg font-semibold text-slate-900">{option.title}</h4>
+                              {option.requiresAssessment && (
+                                <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded-full text-xs font-medium">
+                                  Requires Assessment
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-slate-600 text-sm mb-4 leading-relaxed">
+                              {option.description}
+                            </p>
+                            
+                            <div className="space-y-3">
+                              <div className="flex items-center text-sm text-slate-500">
+                                <Clock className="h-4 w-4 mr-2" />
+                                <span>Estimated time: {option.estimatedTime}</span>
+                              </div>
+                              
+                              <div>
+                                <p className="text-sm font-medium text-slate-700 mb-2">Includes:</p>
+                                <div className="flex flex-wrap gap-2">
+                                  {option.features.map((feature, index) => (
+                                    <span key={index} className="px-2 py-1 bg-slate-100 text-slate-700 rounded text-xs">
+                                      {feature}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {assessmentData.length === 0 && (
+                    <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                      <div className="flex items-start space-x-3">
+                        <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+                        <div>
+                          <p className="text-amber-800 font-medium">Assessment Required</p>
+                          <p className="text-amber-700 text-sm mt-1">
+                            Some report types require a completed assessment. Complete an assessment to unlock all report options.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Resume Selection */
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => {
+                        setSelectedReportType(null)
+                        setSelectedResumeId(null)
+                      }}
+                      className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                    >
+                      <ArrowRight className="h-5 w-5 text-slate-600 rotate-180" />
+                    </button>
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-900">Select Resume Data</h3>
+                      <p className="text-slate-600">Choose which resume to use for generating your {reportOptions.find(opt => opt.id === selectedReportType)?.title}</p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {resumeData.map((resume) => {
+                      const skillsCount = resume.parsed_data?.skills ? 
+                        Object.values(resume.parsed_data.skills).flat().length : 0
+                      
+                      return (
+                        <div
+                          key={resume.id}
+                          onClick={() => setSelectedResumeId(resume.id)}
+                          className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
+                            selectedResumeId === resume.id
+                              ? 'border-blue-500 bg-blue-50 shadow-lg'
+                              : 'border-slate-200 hover:border-slate-300 hover:shadow-md'
+                          }`}
+                        >
+                          <div className="flex items-start space-x-3">
+                            <div className="p-2 bg-blue-100 rounded-lg">
+                              <FileText className="h-5 w-5 text-blue-600" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-slate-900 mb-1">{resume.filename}</h4>
+                              <p className="text-sm text-slate-600 mb-2">
+                                Uploaded {new Date(resume.created_at).toLocaleDateString()}
+                              </p>
+                              <div className="flex items-center space-x-4 text-xs text-slate-500">
+                                <span>{skillsCount} skills identified</span>
+                                <span>•</span>
+                                <span>{resume.parsed_data?.experience?.length || 0} experiences</span>
+                                <span>•</span>
+                                <span>{resume.parsed_data?.education?.length || 0} education</span>
+                              </div>
+                            </div>
+                            {selectedResumeId === resume.id && (
+                              <CheckCircle2 className="h-5 w-5 text-blue-600" />
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {selectedResumeId && (
+                    <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center space-x-3">
+                        <CheckCircle2 className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="text-green-800 font-medium">Ready to Generate</p>
+                          <p className="text-green-700 text-sm">
+                            Your {reportOptions.find(opt => opt.id === selectedReportType)?.title} will be generated using the selected resume data.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="border-t border-slate-200 p-6 flex justify-between">
+              <div className="text-sm text-slate-500">
+                {selectedReportType && selectedResumeId ? (
+                  <span>Ready to generate your report</span>
+                ) : selectedReportType ? (
+                  <span>Select a resume to continue</span>
+                ) : (
+                  <span>Select a report type to continue</span>
+                )}
+              </div>
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => {
+                    setShowReportTypeSelection(false)
+                    setSelectedReportType(null)
+                    setSelectedResumeId(null)
+                  }}
+                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                {selectedReportType && selectedResumeId && (
+                  <button
+                    onClick={generateNewReport}
+                    disabled={generating}
+                    className="flex items-center px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 disabled:opacity-50"
+                  >
+                    {generating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        Generate Report
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
