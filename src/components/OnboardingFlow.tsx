@@ -17,10 +17,21 @@ import {
   Award,
   Shield,
   Zap,
-  Globe,
-  Heart,
-  Star,
+  Cpu,
+  Code,
+  MessageSquare,
+  Search,
+  Crown,
+  Gift,
+  CheckCircle,
+  AlertCircle,
+  ExternalLink,
+  RefreshCw,
+  Settings,
   Play,
+  Pause,
+  RotateCcw,
+  Accessibility,
   X,
   Lock,
   Eye,
@@ -279,8 +290,8 @@ const OnboardingFlow: React.FC = () => {
       content: (
         <div className="space-y-6">
           <div className="text-center">
-            <div className="p-4 bg-gradient-to-r from-emerald-100 to-green-100 rounded-full w-fit mx-auto mb-4">
-              <Shield className="h-12 w-12 text-emerald-600" />
+            <div className="p-4 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full w-fit mx-auto mb-4">
+              <Shield className="h-12 w-12 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-slate-900 mb-2">
               Your Privacy is Our Priority
@@ -290,58 +301,58 @@ const OnboardingFlow: React.FC = () => {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="p-6 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border-2 border-emerald-200 shadow-sm">
+            <div className="p-6 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg border border-blue-300">
               <div className="flex items-center space-x-3 mb-3">
-                <div className="p-2 bg-emerald-100 rounded-lg">
-                  <Database className="h-5 w-5 text-emerald-600" />
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Database className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="font-semibold text-emerald-900">Data Ownership</h3>
+                <h3 className="font-semibold text-white">Data Ownership</h3>
               </div>
-              <p className="text-emerald-800 text-sm leading-relaxed">
+              <p className="text-blue-100 text-sm leading-relaxed">
                 You retain full ownership of your data with options to export or delete at any time
               </p>
             </div>
-            <div className="p-6 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl border-2 border-blue-200 shadow-sm">
+            <div className="p-6 bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl shadow-lg border border-indigo-300">
               <div className="flex items-center space-x-3 mb-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Lock className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Lock className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="font-semibold text-blue-900">Secure Storage</h3>
+                <h3 className="font-semibold text-white">Secure Storage</h3>
               </div>
-              <p className="text-blue-800 text-sm leading-relaxed">
+              <p className="text-indigo-100 text-sm leading-relaxed">
                 All data is encrypted in transit and at rest using industry-standard security
               </p>
             </div>
-            <div className="p-6 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl border-2 border-purple-200 shadow-sm">
+            <div className="p-6 bg-gradient-to-br from-purple-600 to-purple-700 rounded-xl shadow-lg border border-purple-300">
               <div className="flex items-center space-x-3 mb-3">
-                <div className="p-2 bg-purple-100 rounded-lg">
-                  <Eye className="h-5 w-5 text-purple-600" />
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <Eye className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="font-semibold text-purple-900">Transparent Policies</h3>
+                <h3 className="font-semibold text-white">Transparent Policies</h3>
               </div>
-              <p className="text-purple-800 text-sm leading-relaxed">
+              <p className="text-purple-100 text-sm leading-relaxed">
                 Clear, easy-to-understand privacy policies with no hidden terms
               </p>
             </div>
-            <div className="p-6 bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl border-2 border-orange-200 shadow-sm">
+            <div className="p-6 bg-gradient-to-br from-cyan-600 to-cyan-700 rounded-xl shadow-lg border border-cyan-300">
               <div className="flex items-center space-x-3 mb-3">
-                <div className="p-2 bg-orange-100 rounded-lg">
-                  <UserCheck className="h-5 w-5 text-orange-600" />
+                <div className="p-2 bg-white/20 rounded-lg">
+                  <UserCheck className="h-5 w-5 text-white" />
                 </div>
-                <h3 className="font-semibold text-orange-900">User Control</h3>
+                <h3 className="font-semibold text-white">User Control</h3>
               </div>
-              <p className="text-orange-800 text-sm leading-relaxed">
+              <p className="text-cyan-100 text-sm leading-relaxed">
                 Granular privacy controls let you decide what data to share and with whom
               </p>
             </div>
           </div>
-          <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
+          <div className="p-6 bg-gradient-to-r from-slate-700 to-slate-800 rounded-xl border border-slate-600 shadow-lg">
             <div className="flex items-start space-x-3">
-              <Shield className="h-5 w-5 text-slate-600 mt-0.5" />
+              <Shield className="h-6 w-6 text-slate-300 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-slate-900 mb-1">GDPR & CCPA Compliant</p>
-                <p className="text-xs text-slate-600">
-                  We comply with international privacy regulations and data protection standards
+                <p className="text-lg font-semibold text-white mb-2">GDPR & CCPA Compliant</p>
+                <p className="text-slate-300 text-sm leading-relaxed">
+                  We comply with international privacy regulations and data protection standards, ensuring your rights are protected under global privacy laws.
                 </p>
               </div>
             </div>
@@ -353,12 +364,12 @@ const OnboardingFlow: React.FC = () => {
       id: 'ready',
       title: 'Ready to Get Started',
       description: 'Your journey begins now',
-      icon: Star,
+      icon: CheckCircle,
       content: (
         <div className="text-center space-y-6">
           <div className="flex justify-center">
             <div className="p-4 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full">
-              <Star className="h-16 w-16 text-white" />
+              <CheckCircle className="h-16 w-16 text-white" />
             </div>
           </div>
           <div>
